@@ -162,19 +162,23 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
       <div style={{ flex: '1 0 0' }} />
 
       {/* Bottom: Row 1 - Play button + Main progress bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+        {/* Play label */}
+        <span style={{ color: '#dddddd', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>
+          플레이리스트 시작
+        </span>
         {/* Play button */}
         <button
           onClick={togglePlay}
           style={{
             width: 72, height: 72, borderRadius: '50%',
-            background: 'none', border: 'none',
+            background: 'transparent', border: '2px solid #dddddd',
             color: '#dddddd', display: 'flex', alignItems: 'center', justifyContent: 'center',
             cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
             padding: 0,
           }}
-          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '0.8'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
         >
           {isPlaying
             ? <img src="/icon-pause.svg" alt="pause" style={{ width: 48, height: 48 }} />

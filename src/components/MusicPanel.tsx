@@ -15,7 +15,7 @@ export default function MusicPanel({ open, onClose }: Props) {
   const [selectedTheme, setSelectedTheme] = useState<ThemeId | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { track: currentTrack, playlist, jamendoQueue, isPlaying, setTrack, setIsPlaying, addLocalTracks, startGenreStream, startThemeStream, isLoadingJamendo } = usePlayerStore()
+  const { track: currentTrack, playlist, jamendoQueue, setTrack, setIsPlaying, addLocalTracks, startGenreStream, startThemeStream, isLoadingJamendo } = usePlayerStore()
   const { selectedGenre, setGenre } = useUIStore()
 
 
@@ -173,13 +173,14 @@ export default function MusicPanel({ open, onClose }: Props) {
                 disabled={!selectedGenre || isLoadingJamendo}
                 style={{
                   width: '100%', padding: '8px', borderRadius: 999, fontSize: 13,
-                  fontWeight: 600, border: 'none', cursor: 'pointer',
-                  background: '#dddddd', color: '#000',
-                  opacity: (!selectedGenre || isLoadingJamendo || isPlaying) ? 0.4 : 1,
+                  fontWeight: 600, border: '2px solid #dddddd', cursor: 'pointer',
+                  background: 'transparent', color: '#dddddd',
+                  opacity: (!selectedGenre || isLoadingJamendo) ? 0.4 : 1,
                   transition: 'opacity 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
               >
-                {isLoadingJamendo ? '로딩 중…' : '▶'}
+                플레이리스트 시작 {isLoadingJamendo ? '로딩 중…' : '▶'}
               </button>
             </div>
           )}
@@ -208,13 +209,14 @@ export default function MusicPanel({ open, onClose }: Props) {
                 disabled={!selectedTheme || isLoadingJamendo}
                 style={{
                   width: '100%', padding: '8px', borderRadius: 999, fontSize: 13,
-                  fontWeight: 600, border: 'none', cursor: 'pointer',
-                  background: '#dddddd', color: '#000',
-                  opacity: (!selectedTheme || isLoadingJamendo || isPlaying) ? 0.4 : 1,
+                  fontWeight: 600, border: '2px solid #dddddd', cursor: 'pointer',
+                  background: 'transparent', color: '#dddddd',
+                  opacity: (!selectedTheme || isLoadingJamendo) ? 0.4 : 1,
                   transition: 'opacity 0.2s',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 }}
               >
-                {isLoadingJamendo ? '로딩 중…' : '▶'}
+                플레이리스트 시작 {isLoadingJamendo ? '로딩 중…' : '▶'}
               </button>
             </div>
           )}
@@ -239,12 +241,15 @@ export default function MusicPanel({ open, onClose }: Props) {
                 key={t.id}
                 onClick={() => { setTrack(t); setIsPlaying(true) }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 0,
-                  padding: '10px 16px 10px 36px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 12,
+                  padding: '10px 16px', cursor: 'pointer',
                   background: currentTrack?.id === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
                   transition: 'background 0.15s',
                 }}
               >
+                <svg width="20" height="20" fill="rgba(255,255,255,0.5)" viewBox="0 0 24 24" style={{ flexShrink: 0 }}>
+                  <path d="M8 5v14l11-7z"/>
+                </svg>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
                     color: currentTrack?.id === t.id ? 'white' : 'rgba(255,255,255,0.75)',
