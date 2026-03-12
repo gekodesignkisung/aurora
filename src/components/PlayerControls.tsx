@@ -45,15 +45,18 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     const onDur   = () => setDuration(audio.duration)
     const onEnd   = () => { nextTrack() }
     const onPlay  = () => { setIsPlaying(true); analyzerRef.current?.resume() }
+    const onPause = () => { setIsPlaying(false) }
     audio.addEventListener('timeupdate', onTime)
     audio.addEventListener('durationchange', onDur)
     audio.addEventListener('ended', onEnd)
     audio.addEventListener('play', onPlay)
+    audio.addEventListener('pause', onPause)
     return () => {
       audio.removeEventListener('timeupdate', onTime)
       audio.removeEventListener('durationchange', onDur)
       audio.removeEventListener('ended', onEnd)
       audio.removeEventListener('play', onPlay)
+      audio.removeEventListener('pause', onPause)
     }
   }, [audioRef, analyzerRef, setCurrentTime, setDuration, setIsPlaying, nextTrack])
 
