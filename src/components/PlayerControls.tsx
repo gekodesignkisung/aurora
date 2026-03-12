@@ -186,8 +186,8 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           onMouseLeave={(e) => e.currentTarget.style.opacity = '1'}
         >
           {isPlaying
-            ? <img src="/icon-pause.svg" alt="pause" style={{ width: 48, height: 48 }} />
-            : <img src="/icon-play.svg" alt="play" style={{ width: 48, height: 48 }} />
+            ? <img src="/icon-pause.svg" alt="pause" style={{ width: 72, height: 72 }} />
+            : <img src="/icon-play.svg" alt="play" style={{ width: 72, height: 72 }} />
           }
         </button>
 
