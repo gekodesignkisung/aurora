@@ -5,7 +5,6 @@ import { useUIStore } from '@/store/uiStore'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useResponsive } from '@/hooks/useResponsive'
 import ModeSelector from './ModeSelector'
-import { GENRES, THEMES } from '@/api/deezer'
 
 interface Props {
   audioRef: React.RefObject<HTMLAudioElement | null>
@@ -28,9 +27,9 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
   const {
     track, isPlaying, currentTime, duration, volume,
     setIsPlaying, setCurrentTime, setDuration, setVolume,
-    nextTrack, prevTrack,
+    nextTrack, prevTrack, playingStreamLabel,
   } = usePlayerStore()
-  const { setMusicPanelOpen, selectedGenre, selectedTheme } = useUIStore()
+  const { setMusicPanelOpen } = useUIStore()
   const { isMobile } = useResponsive()
   const analyzerConnected = useRef(false)
   const pad = isMobile ? '20px' : '50px'
@@ -281,12 +280,10 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
                 <img src="/icon-next.svg" alt="next" style={{ width: btnSize, height: btnSize }} />
               </button>
             </div>
-            {/* Genre / Theme label */}
-            {(selectedGenre || selectedTheme) && (
+            {/* Genre / Theme / Local label */}
+            {(track?.source === 'local' || playingStreamLabel) && (
               <p style={{ color: '#cccccc', fontSize: isMobile ? 13 : 16, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, textAlign: 'center' }}>
-                {selectedTheme
-                  ? THEMES.find((t) => t.id === selectedTheme)?.label
-                  : GENRES.find((g) => g.id === selectedGenre)?.label}
+                {track?.source === 'local' ? 'Local' : playingStreamLabel}
               </p>
             )}
           </div>

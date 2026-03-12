@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Track } from '@/types/track'
 import type { VisualMode } from '@/types/visual'
-import { fetchGenreQueue, fetchThemeQueue, type GenreId, type ThemeId } from '@/api/deezer'
+import { fetchGenreQueue, fetchThemeQueue, GENRES, THEMES, type GenreId, type ThemeId } from '@/api/deezer'
 
 const VISUAL_MODES: VisualMode[] = [
   'nebula-cloud',
@@ -26,6 +26,7 @@ interface PlayerState {
   volume: number
   visualMode: VisualMode
   isLoadingJamendo: boolean
+  playingStreamLabel: string | null
 
   setTrack: (track: Track | null) => void
   setPlaylist: (tracks: Track[]) => void
@@ -51,6 +52,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   volume: 0.5,
   visualMode: 'nebula-cloud',
   isLoadingJamendo: false,
+  playingStreamLabel: null,
 
   setTrack: (track) => set({ track }),
   setPlaylist: (tracks) => set({ playlist: tracks }),
@@ -98,7 +100,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const tracks = await fetchGenreQueue(genre, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode() })
+      const label = GENRES.find((g) => g.id === genre)?.label ?? genre
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label })
     } finally {
       set({ isLoadingJamendo: false })
     }
@@ -110,7 +113,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const tracks = await fetchThemeQueue(themeId, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode() })
+      const label = THEMES.find((t) => t.id === themeId)?.label ?? themeId
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label })
     } finally {
       set({ isLoadingJamendo: false })
     }
