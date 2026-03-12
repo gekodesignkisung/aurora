@@ -3,7 +3,7 @@ import { useUIStore } from '@/store/uiStore'
 
 export function useIdleHide(delayMs = 4000) {
   const setShowUI = useUIStore((s) => s.setShowUI)
-  const timerRef = useRef<ReturnType<typeof setTimeout>>()
+  const timerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const lastResetRef = useRef(0)
 
   useEffect(() => {

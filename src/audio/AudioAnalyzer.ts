@@ -7,8 +7,8 @@ export class AudioAnalyzer {
   private context: AudioContext | null = null
   private analyser: AnalyserNode | null = null
   private source: MediaElementAudioSourceNode | null = null
-  private frequencies: Uint8Array = new Uint8Array(FFT_SIZE / 2)
-  private waveform: Uint8Array = new Uint8Array(FFT_SIZE / 2)
+  private frequencies: Uint8Array<ArrayBuffer> = new Uint8Array(FFT_SIZE / 2)
+  private waveform: Uint8Array<ArrayBuffer> = new Uint8Array(FFT_SIZE / 2)
   private connected = false
   private detector = new BeatDetector()
 
@@ -25,8 +25,8 @@ export class AudioAnalyzer {
     this.source.connect(this.analyser)
     this.analyser.connect(this.context.destination)
 
-    this.frequencies = new Uint8Array(this.analyser.frequencyBinCount)
-    this.waveform = new Uint8Array(this.analyser.frequencyBinCount)
+    this.frequencies = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
+    this.waveform = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
     this.connected = true
   }
 
