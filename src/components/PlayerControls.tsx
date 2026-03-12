@@ -163,10 +163,6 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
 
       {/* Bottom: Row 1 - Play button + Main progress bar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
-        {/* Play label */}
-        <span style={{ color: '#dddddd', fontSize: 14, fontWeight: 500, whiteSpace: 'nowrap' }}>
-          플레이리스트 시작
-        </span>
         {/* Play button */}
         <button
           onClick={togglePlay}
