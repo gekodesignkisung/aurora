@@ -76,7 +76,7 @@ export default function MusicPanel({ open, onClose }: Props) {
       {/* Panel */}
       <div style={panelStyle}>
         {/* Header */}
-        <div style={{ padding: '16px 26px', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10, backdropFilter: 'blur(20px)' }}>
+        <div style={{ padding: '16px 26px', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10, backdropFilter: 'blur(20px)', minHeight: 250 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 4 }}>
