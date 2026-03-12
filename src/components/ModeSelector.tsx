@@ -1,4 +1,5 @@
 import { usePlayerStore } from '@/store/playerStore'
+import { useResponsive } from '@/hooks/useResponsive'
 import type { VisualMode } from '@/types/visual'
 
 const MODES: { id: VisualMode; label: string; key: string }[] = [
@@ -12,6 +13,7 @@ const MODES: { id: VisualMode; label: string; key: string }[] = [
 
 export default function ModeSelector() {
   const { visualMode, setVisualMode } = usePlayerStore()
+  const { isMobile } = useResponsive()
 
   return (
     <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 10, overflow: 'auto' }}>
@@ -21,7 +23,7 @@ export default function ModeSelector() {
           onClick={() => setVisualMode(m.id)}
           title={`키 ${m.key}`}
           style={{
-            padding: '6px 12px', borderRadius: 50, fontSize: 10, fontWeight: 600,
+            padding: isMobile ? '7px 14px' : '6px 12px', borderRadius: 50, fontSize: isMobile ? 12 : 10, fontWeight: 600,
             border: 'none', cursor: 'pointer', transition: 'all 0.2s',
             background: visualMode === m.id ? 'white' : 'rgba(255,255,255,0.2)',
             color: visualMode === m.id ? 'black' : 'white',

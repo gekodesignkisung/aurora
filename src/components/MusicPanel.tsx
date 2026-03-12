@@ -91,10 +91,10 @@ export default function MusicPanel({ open, onClose }: Props) {
                     key={t.id}
                     onClick={() => setTab(t.id)}
                     style={{
-                      padding: '4px 8px', borderRadius: 0, fontSize: 14, fontWeight: 600,
+                      padding: isMobile ? '5px 10px' : '4px 8px', borderRadius: 0, fontSize: isMobile ? 17 : 14, fontWeight: 600,
                       border: 'none',
                       borderBottom: isActive ? '2px solid #dddddd' : 'none',
-                      paddingBottom: isActive ? '2px' : '4px',
+                      paddingBottom: isActive ? '2px' : isMobile ? '3px' : '4px',
                       cursor: 'pointer', transition: 'all 0.15s',
                       background: 'transparent',
                       color: '#dddddd',
@@ -161,7 +161,7 @@ export default function MusicPanel({ open, onClose }: Props) {
                     key={g.id}
                     onClick={() => setGenre(g.id as GenreId)}
                     style={{
-                      padding: '4px 10px', borderRadius: 999, fontSize: 12,
+                      padding: isMobile ? '5px 12px' : '4px 10px', borderRadius: 999, fontSize: isMobile ? 14 : 12,
                       border: 'none', cursor: 'pointer', transition: 'all 0.15s',
                       background: selectedGenre === g.id ? '#dddddd' : 'rgba(255,255,255,0.1)',
                       color: selectedGenre === g.id ? '#000' : 'rgba(255,255,255,0.65)',
@@ -180,7 +180,7 @@ export default function MusicPanel({ open, onClose }: Props) {
                 }}
                 disabled={!selectedGenre || isLoadingJamendo}
                 style={{
-                  width: '100%', padding: '8px', borderRadius: 999, fontSize: 13,
+                  width: '100%', padding: isMobile ? '10px' : '8px', borderRadius: 999, fontSize: isMobile ? 16 : 13,
                   fontWeight: 600, border: '2px solid #dddddd', cursor: 'pointer',
                   background: 'transparent', color: '#dddddd',
                   opacity: (!selectedGenre || isLoadingJamendo) ? 0.4 : 1,
@@ -202,7 +202,7 @@ export default function MusicPanel({ open, onClose }: Props) {
                     key={t.id}
                     onClick={() => setSelectedTheme(t.id as ThemeId)}
                     style={{
-                      padding: '4px 10px', borderRadius: 999, fontSize: 12,
+                      padding: isMobile ? '5px 12px' : '4px 10px', borderRadius: 999, fontSize: isMobile ? 14 : 12,
                       border: 'none', cursor: 'pointer', transition: 'all 0.15s',
                       background: selectedTheme === t.id ? '#dddddd' : 'rgba(255,255,255,0.1)',
                       color: selectedTheme === t.id ? '#000' : 'rgba(255,255,255,0.65)',
@@ -221,7 +221,7 @@ export default function MusicPanel({ open, onClose }: Props) {
                 }}
                 disabled={!selectedTheme || isLoadingJamendo}
                 style={{
-                  width: '100%', padding: '8px', borderRadius: 999, fontSize: 13,
+                  width: '100%', padding: isMobile ? '10px' : '8px', borderRadius: 999, fontSize: isMobile ? 16 : 13,
                   fontWeight: 600, border: '2px solid #dddddd', cursor: 'pointer',
                   background: 'transparent', color: '#dddddd',
                   opacity: (!selectedTheme || isLoadingJamendo) ? 0.4 : 1,
