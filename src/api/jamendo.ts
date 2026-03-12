@@ -37,7 +37,7 @@ export async function fetchGenreQueue(genre: GenreId, limit = 20): Promise<Track
     format: 'json',
     limit: String(limit),
     tags: tag,
-    audioformat: 'mp32',
+    audioformat: 'mp3',
     imagesize: '300',
     boost: 'popularity_week',
   })
