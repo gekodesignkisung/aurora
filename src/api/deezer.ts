@@ -1,7 +1,7 @@
 import type { Track } from '@/types/track'
 
-// Use Deezer API directly (public API, CORS enabled)
-const BASE = 'https://api.deezer.com'
+// Use Vercel serverless functions to proxy Deezer API (avoids CORS issues)
+const BASE = '/api'
 
 export const GENRES = [
   { id: 'electro',    label: 'Electro',    deezerId: 106 },
@@ -52,7 +52,7 @@ export async function fetchThemeQueue(themeId: ThemeId, limit = 25): Promise<Tra
   const theme = THEMES.find((t) => t.id === themeId)
   if (!theme) return []
   try {
-    const res = await fetch(`${BASE}/search?q=${encodeURIComponent(theme.query)}&limit=${limit}`)
+    const res = await fetch(`${BASE}/deezer-search?q=${encodeURIComponent(theme.query)}&limit=${limit}`)
     const json = await res.json()
     const tracks: Track[] = (json.data ?? [])
       .filter((t: { preview: string }) => !!t.preview)
@@ -68,7 +68,7 @@ export async function fetchGenreQueue(genre: GenreId, limit = 25): Promise<Track
   if (!g) return []
 
   try {
-    const res = await fetch(`${BASE}/chart/${g.deezerId}/tracks?limit=${limit}`)
+    const res = await fetch(`${BASE}/deezer-chart?genreId=${g.deezerId}&limit=${limit}`)
     const json = await res.json()
     const tracks: Track[] = (json.data ?? [])
       .filter((t: { preview: string }) => !!t.preview)
