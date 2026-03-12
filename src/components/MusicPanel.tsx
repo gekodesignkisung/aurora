@@ -172,7 +172,12 @@ export default function MusicPanel({ open, onClose }: Props) {
                 ))}
               </div>
               <button
-                onClick={() => selectedGenre && startGenreStream(selectedGenre)}
+                onClick={() => {
+                  if (selectedGenre) {
+                    startGenreStream(selectedGenre)
+                    onClose()
+                  }
+                }}
                 disabled={!selectedGenre || isLoadingJamendo}
                 style={{
                   width: '100%', padding: '8px', borderRadius: 999, fontSize: 13,
@@ -208,7 +213,12 @@ export default function MusicPanel({ open, onClose }: Props) {
                 ))}
               </div>
               <button
-                onClick={() => selectedTheme && startThemeStream(selectedTheme)}
+                onClick={() => {
+                  if (selectedTheme) {
+                    startThemeStream(selectedTheme)
+                    onClose()
+                  }
+                }}
                 disabled={!selectedTheme || isLoadingJamendo}
                 style={{
                   width: '100%', padding: '8px', borderRadius: 999, fontSize: 13,
@@ -242,7 +252,11 @@ export default function MusicPanel({ open, onClose }: Props) {
             allTracks.map((t) => (
               <div
                 key={t.id}
-                onClick={() => { setTrack(t); setIsPlaying(true) }}
+                onClick={() => {
+                  setTrack(t)
+                  setIsPlaying(true)
+                  onClose()
+                }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 0,
                   padding: '10px 16px 10px 36px', cursor: 'pointer',
