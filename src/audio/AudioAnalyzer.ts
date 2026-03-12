@@ -43,8 +43,8 @@ export class AudioAnalyzer {
       return this.silence()
     }
 
-    this.analyser.getByteFrequencyData(this.frequencies)
-    this.analyser.getByteTimeDomainData(this.waveform)
+    this.analyser.getByteFrequencyData(this.frequencies as any)
+    this.analyser.getByteTimeDomainData(this.waveform as any)
 
     const sampleRate = this.context.sampleRate
     const binSize = sampleRate / FFT_SIZE
