@@ -1,7 +1,7 @@
 import type { Track } from '@/types/track'
 
-// Vite dev proxy: /deezer/* → https://api.deezer.com/*  (solves CORS)
-const BASE = '/deezer'
+// Use Deezer API directly (public API, CORS enabled)
+const BASE = 'https://api.deezer.com'
 
 export const GENRES = [
   { id: 'electro',    label: 'Electro',    deezerId: 106 },
