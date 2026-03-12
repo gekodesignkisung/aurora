@@ -93,8 +93,8 @@ export default function MusicPanel({ open, onClose }: Props) {
                     style={{
                       padding: isMobile ? '5px 10px' : '4px 8px', borderRadius: 0, fontSize: isMobile ? 17 : 14, fontWeight: 600,
                       border: 'none',
-                      borderBottom: isActive ? '2px solid #dddddd' : 'none',
-                      paddingBottom: isActive ? '2px' : isMobile ? '3px' : '4px',
+                      borderBottom: isActive ? '2px solid #dddddd' : '2px solid transparent',
+                      paddingBottom: isMobile ? '3px' : '4px',
                       cursor: 'pointer', transition: 'all 0.15s',
                       background: 'transparent',
                       color: '#dddddd',
