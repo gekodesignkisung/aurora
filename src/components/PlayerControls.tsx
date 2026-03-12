@@ -39,20 +39,17 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     if (!audio) return
     const onTime  = () => setCurrentTime(audio.currentTime)
     const onDur   = () => setDuration(audio.duration)
-    const onEnd   = () => { setIsPlaying(false); nextTrack() }
+    const onEnd   = () => { nextTrack() }
     const onPlay  = () => { setIsPlaying(true); analyzerRef.current?.resume() }
-    const onPause = () => setIsPlaying(false)
     audio.addEventListener('timeupdate', onTime)
     audio.addEventListener('durationchange', onDur)
     audio.addEventListener('ended', onEnd)
     audio.addEventListener('play', onPlay)
-    audio.addEventListener('pause', onPause)
     return () => {
       audio.removeEventListener('timeupdate', onTime)
       audio.removeEventListener('durationchange', onDur)
       audio.removeEventListener('ended', onEnd)
       audio.removeEventListener('play', onPlay)
-      audio.removeEventListener('pause', onPause)
     }
   }, [audioRef, analyzerRef, setCurrentTime, setDuration, setIsPlaying, nextTrack])
 
@@ -71,73 +68,126 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     if (audioRef.current) audioRef.current.volume = volume
   }, [volume, audioRef])
 
+  const wasPlayingRef = useRef(false)
+
   const togglePlay = useCallback(() => {
     const audio = audioRef.current
     if (!audio || !track) return
     ensureAnalyzer()
-    if (isPlaying) audio.pause()
-    else audio.play().catch(() => {})
+    if (isPlaying) {
+      audio.pause()
+      wasPlayingRef.current = false
+    } else {
+      audio.play().catch(() => {})
+      wasPlayingRef.current = true
+    }
   }, [audioRef, isPlaying, track, ensureAnalyzer])
 
   useKeyboardShortcuts(audioRef, togglePlay)
 
+  // Keep playback going even when window loses focus
+  useEffect(() => {
+    const handleBlur = () => {
+      wasPlayingRef.current = isPlaying
+    }
+    const handleFocus = () => {
+      analyzerRef.current?.resume()
+      const audio = audioRef.current
+      if (audio && wasPlayingRef.current && audio.paused) {
+        audio.play().catch(() => {})
+      }
+    }
+    const interval = setInterval(() => {
+      analyzerRef.current?.resume()
+      const audio = audioRef.current
+      if (audio && wasPlayingRef.current && audio.paused) {
+        audio.play().catch(() => {})
+      }
+    }, 1000)
+
+    window.addEventListener('blur', handleBlur)
+    window.addEventListener('focus', handleFocus)
+    return () => {
+      window.removeEventListener('blur', handleBlur)
+      window.removeEventListener('focus', handleFocus)
+      clearInterval(interval)
+    }
+  }, [isPlaying, analyzerRef, audioRef])
+
   const progress = duration > 0 ? (currentTime / duration) * 100 : 0
 
   return (
-    <>
-      {/* Top-left: track info */}
+    <div style={{
+      position: 'fixed', inset: 0,
+      display: 'flex', flexDirection: 'column',
+      padding: '50px', gap: '10px',
+      pointerEvents: 'auto',
+      fontFamily: 'Inter, -apple-system, sans-serif',
+    }}>
+      {/* Top: Track info */}
       {track && (
-        <div style={{ position: 'absolute', top: 32, left: 32, pointerEvents: 'auto' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            {track.coverUrl ? (
-              <img
-                src={track.coverUrl}
-                alt=""
-                style={{ width: 52, height: 52, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}
-              />
-            ) : (
-              <div style={{
-                width: 52, height: 52, borderRadius: 10, flexShrink: 0,
-                background: 'rgba(255,255,255,0.1)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <svg width="22" height="22" fill="rgba(255,255,255,0.5)" viewBox="0 0 24 24">
-                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                </svg>
-              </div>
-            )}
-            <div>
-              <p style={{
-                color: 'white', fontWeight: 600, fontSize: 15,
-                textShadow: '0 2px 8px rgba(0,0,0,0.8)',
-                maxWidth: 260, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-              }}>
-                {track.name}
-              </p>
-              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, marginTop: 2 }}>
-                {track.artist}
-              </p>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
+          {track.coverUrl ? (
+            <img
+              src={track.coverUrl}
+              alt=""
+              style={{ width: 60, height: 60, borderRadius: 4, objectFit: 'cover', flexShrink: 0 }}
+            />
+          ) : (
+            <div style={{
+              width: 60, height: 60, borderRadius: 4, flexShrink: 0,
+              background: 'white',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <svg width="24" height="24" fill="rgba(0,0,0,0.2)" viewBox="0 0 24 24">
+                <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+              </svg>
             </div>
+          )}
+          <div>
+            <p style={{
+              color: 'white', fontWeight: 500, fontSize: 18, lineHeight: 'normal',
+              margin: 0,
+            }}>
+              {track.name}
+            </p>
+            <p style={{ color: '#bbb', fontSize: 16, lineHeight: 'normal', marginTop: 2, margin: '2px 0 0 0' }}>
+              {track.artist}
+            </p>
           </div>
         </div>
       )}
 
-      {/* Bottom-center: mode selector */}
-      <div style={{
-        position: 'absolute', bottom: 140, left: '50%', transform: 'translateX(-50%)',
-        pointerEvents: 'auto',
-      }}>
-        <ModeSelector />
-      </div>
+      {/* Center: Spacer */}
+      <div style={{ flex: '1 0 0' }} />
 
-      {/* Bottom: controls */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0,
-        padding: '0 32px 32px',
-        pointerEvents: track ? 'auto' : 'none',
-      }}>
-        {/* Progress bar */}
-        <div style={{ marginBottom: 12 }}>
+      {/* Bottom: Row 1 - Play button + Main progress bar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 0, flexShrink: 0 }}>
+        {/* Play button */}
+        <button
+          onClick={togglePlay}
+          style={{
+            width: 72, height: 72, borderRadius: '50%',
+            background: 'none', border: 'none',
+            color: '#dddddd', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', flexShrink: 0, transition: 'all 0.2s',
+            padding: 0,
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
+          onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
+        >
+          {isPlaying
+            ? <img src="/icon-pause.svg" alt="pause" style={{ width: 48, height: 48 }} />
+            : <img src="/icon-play.svg" alt="play" style={{ width: 48, height: 48 }} />
+          }
+        </button>
+
+        {/* Main progress bar */}
+        <div style={{ flex: '1 0 0', position: 'relative', height: 52, display: 'flex', alignItems: 'center', marginLeft: 20 }}>
+          <div style={{
+            position: 'absolute', width: '100%', height: 2,
+            background: 'rgba(255,255,255,0.5)', borderRadius: 50,
+          }} />
           <input
             type="range"
             min={0} max={100}
@@ -147,64 +197,53 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
               if (!audio || !duration) return
               audio.currentTime = (Number(e.target.value) / 100) * duration
             }}
-            style={{ width: '100%', height: 3, cursor: 'pointer' }}
+            style={{
+              position: 'absolute', width: '100%', height: 52, cursor: 'pointer',
+              appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
+              background: 'transparent', border: 'none', outline: 'none',
+              zIndex: 5, padding: 0, margin: 0,
+              opacity: 0,
+            } as React.CSSProperties}
           />
           <div style={{
-            display: 'flex', justifyContent: 'space-between',
-            color: 'rgba(255,255,255,0.35)', fontSize: 11, marginTop: 4,
-          }}>
-            <span>{fmt(currentTime)}</span>
-            <span>{fmt(duration)}</span>
-          </div>
-        </div>
-
-        {/* Buttons row */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 24 }}>
-          {/* Prev / Play / Next */}
-          <button
-            onClick={prevTrack}
-            style={{ color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-          >
-            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
-            </svg>
-          </button>
-          <button
-            onClick={togglePlay}
-            style={{
-              width: 56, height: 56, borderRadius: '50%',
-              background: 'white', color: '#000', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              cursor: 'pointer', boxShadow: '0 4px 20px rgba(0,0,0,0.5)',
-            }}
-          >
-            {isPlaying
-              ? <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-              : <svg width="22" height="22" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            }
-          </button>
-          <button
-            onClick={nextTrack}
-            style={{ color: 'rgba(255,255,255,0.6)', background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-          >
-            <svg width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/>
-            </svg>
-          </button>
-
-          {/* Volume — right of next */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <svg width="16" height="16" fill="rgba(255,255,255,0.5)" viewBox="0 0 24 24">
-              <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/>
-            </svg>
-            <input
-              type="range" min={0} max={1} step={0.01} value={volume}
-              onChange={(e) => setVolume(Number(e.target.value))}
-              style={{ width: 80, height: 3, cursor: 'pointer' }}
-            />
-          </div>
+            position: 'absolute', left: `${progress}%`, transform: 'translateX(-50%)',
+            width: 14, height: 14, background: '#d9d9d9', borderRadius: '50%',
+            zIndex: 10, pointerEvents: 'none',
+          }} />
         </div>
       </div>
-    </>
+
+      {/* Bottom: Row 2 - Volume control + Effects buttons */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingLeft: 72, paddingRight: 72, flexShrink: 0 }}>
+        {/* Volume control */}
+        <div style={{ width: 150, height: 20, position: 'relative', display: 'flex', alignItems: 'center', marginLeft: 20 }}>
+          <div style={{
+            position: 'absolute', width: '100%', height: 2,
+            background: 'rgba(255,255,255,0.2)', borderRadius: 50,
+          }} />
+          <input
+            type="range"
+            min={0} max={100}
+            value={volume * 100}
+            onChange={(e) => setVolume(Number(e.target.value) / 100)}
+            style={{
+              position: 'absolute', width: '100%', height: 20, cursor: 'pointer',
+              appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none',
+              background: 'transparent', border: 'none', outline: 'none',
+              zIndex: 5, padding: 0, margin: 0,
+              opacity: 0,
+            } as React.CSSProperties}
+          />
+          <div style={{
+            position: 'absolute', left: `${volume * 100}%`, transform: 'translateX(-50%)',
+            width: 14, height: 14, background: 'white', borderRadius: '50%',
+            zIndex: 10, pointerEvents: 'none',
+          }} />
+        </div>
+
+        {/* Effects buttons */}
+        <ModeSelector />
+      </div>
+    </div>
   )
 }

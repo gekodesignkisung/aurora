@@ -67,7 +67,7 @@ export class NebulaCloud implements IVisualMode {
     this.geo.setAttribute('color',    new THREE.BufferAttribute(this.colors, 3))
 
     this.material = new THREE.PointsMaterial({
-      size: 0.55,           // larger to show off the blur gradient
+      size: 0.15,           // smaller particles
       map: makeBlurTexture(),
       vertexColors: true,
       transparent: true,
@@ -95,7 +95,7 @@ export class NebulaCloud implements IVisualMode {
     const scale = 1 + bass * 0.12 + this.beatFlash * 0.05
     const globalHue = (elapsed * 0.04 + spectralCentroid * 0.25) % 1
 
-    this.material.size = 0.4 + volume * 0.5 + this.beatFlash * 0.3
+    this.material.size = 0.1 + volume * 0.15 + this.beatFlash * 0.08
     this.material.opacity = 0.45 + volume * 0.3 + this.beatFlash * 0.15
 
     for (let i = 0; i < COUNT; i++) {

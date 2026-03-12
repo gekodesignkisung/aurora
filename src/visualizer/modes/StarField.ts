@@ -4,7 +4,7 @@ import type { AudioData } from '@/types/audio'
 
 const COUNT = 5000
 const RING_RES = 80
-const MAX_RINGS = 6
+const MAX_RINGS = 12
 
 function hsl2rgb(h: number, s: number, l: number): [number, number, number] {
   const a = s * Math.min(l, 1 - l)
@@ -30,16 +30,17 @@ export class StarField implements IVisualMode {
   private ringHue = 0
 
   private beatFlash = 0
-  private scene: THREE.Scene
 
   constructor(scene: THREE.Scene) {
-    this.scene = scene
     this.geo = new THREE.BufferGeometry()
     this.positions = new Float32Array(COUNT * 3)
 
     for (let i = 0; i < COUNT; i++) {
-      this.positions[i*3]   = (Math.random() - 0.5) * 60
-      this.positions[i*3+1] = (Math.random() - 0.5) * 60
+      // Circular distribution using polar coordinates
+      const angle = Math.random() * Math.PI * 2
+      const radius = Math.sqrt(Math.random()) * 30  // sqrt for uniform distribution
+      this.positions[i*3]   = Math.cos(angle) * radius
+      this.positions[i*3+1] = Math.sin(angle) * radius
       this.positions[i*3+2] = (Math.random() - 0.5) * 500 - 50
     }
 
@@ -84,8 +85,8 @@ export class StarField implements IVisualMode {
     ring.life = 1.0
     ring.hue = this.ringHue
     ring.zPos = -5 - bass * 10    // spawn slightly in front
-    this.ringHue = (this.ringHue + 0.18) % 1
-    ring.mesh.scale.set(0.5, 0.5, 1)
+    this.ringHue = (this.ringHue + 0.15) % 1
+    ring.mesh.scale.set(1, 1, 1)
     ring.mesh.position.z = ring.zPos
     ring.mesh.visible = true
   }
@@ -97,7 +98,7 @@ export class StarField implements IVisualMode {
     if (beat) {
       this.beatFlash = 1.0
       this.spawnRing(bass)
-      this.spawnRing(bass) // two rings per beat
+      this.spawnRing(bass)
     } else {
       this.beatFlash = Math.max(0, this.beatFlash - delta * 3)
     }
@@ -107,14 +108,19 @@ export class StarField implements IVisualMode {
       this.positions[i*3+2] += speed * delta
 
       if (this.positions[i*3+2] > 30) {
-        this.positions[i*3]   = (Math.random() - 0.5) * 60
-        this.positions[i*3+1] = (Math.random() - 0.5) * 60
+        // Reset with circular distribution
+        const angle = Math.random() * Math.PI * 2
+        const radius = Math.sqrt(Math.random()) * 30
+        this.positions[i*3]   = Math.cos(angle) * radius
+        this.positions[i*3+1] = Math.sin(angle) * radius
         this.positions[i*3+2] = -500
       }
 
-      // Treble drift + mid sway + beat scatter
+      // Treble drift + mid sway
       this.positions[i*3]   += Math.sin(i * 0.1 + elapsed * 0.5) * (treble * 6 + mid * 2) * delta
       this.positions[i*3+1] += Math.cos(i * 0.13 + elapsed * 0.4) * (treble * 6 + mid * 2) * delta
+
+      // Beat scatter
       if (beat && i < 2000) {
         this.positions[i*3]   += (Math.random() - 0.5) * (6 + bass * 8)
         this.positions[i*3+1] += (Math.random() - 0.5) * (6 + bass * 8)
@@ -127,7 +133,7 @@ export class StarField implements IVisualMode {
     this.material.size    = 0.1 + bass * 0.55 + this.beatFlash * 0.5
     this.material.opacity = 0.55 + volume * 0.4 + this.beatFlash * 0.05
 
-    // Update rings — faster expand, brighter, longer lived
+    // Update rings
     for (const ring of this.rings) {
       if (ring.life <= 0) continue
       ring.life = Math.max(0, ring.life - delta * 0.7)

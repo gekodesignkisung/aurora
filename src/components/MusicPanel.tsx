@@ -15,8 +15,9 @@ export default function MusicPanel({ open, onClose }: Props) {
   const [selectedTheme, setSelectedTheme] = useState<ThemeId | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const { track: currentTrack, playlist, jamendoQueue, setTrack, addLocalTracks, startGenreStream, startThemeStream, isLoadingJamendo } = usePlayerStore()
+  const { track: currentTrack, playlist, jamendoQueue, isPlaying, setTrack, setIsPlaying, addLocalTracks, startGenreStream, startThemeStream, isLoadingJamendo } = usePlayerStore()
   const { selectedGenre, setGenre } = useUIStore()
+
 
   const allTracks: Track[] = tab === 'local' ? playlist : jamendoQueue
 
@@ -72,14 +73,14 @@ export default function MusicPanel({ open, onClose }: Props) {
       {/* Panel */}
       <div style={panelStyle}>
         {/* Header */}
-        <div style={{ padding: '16px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+        <div style={{ padding: '16px 26px', borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'sticky', top: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10, backdropFilter: 'blur(20px)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
             {/* Tabs */}
             <div style={{ display: 'flex', gap: 4 }}>
               {([
-                { id: 'genre',  label: '장르',  color: '#34d399', bg: 'rgba(52,211,153,0.2)'   },
-                { id: 'theme',  label: '테마',  color: '#f97316', bg: 'rgba(249,115,22,0.2)'   },
-                { id: 'local',  label: '로컬',  color: '#a78bfa', bg: 'rgba(167,139,250,0.25)' },
+                { id: 'genre',  label: '장르',  color: '#dddddd', bg: 'transparent'   },
+                { id: 'theme',  label: '테마',  color: '#dddddd', bg: 'transparent'   },
+                { id: 'local',  label: '로컬',  color: '#dddddd', bg: 'transparent' },
               ] as const).map((t) => {
                 const isActive = tab === t.id
                 return (
@@ -87,11 +88,13 @@ export default function MusicPanel({ open, onClose }: Props) {
                     key={t.id}
                     onClick={() => setTab(t.id)}
                     style={{
-                      padding: '4px 10px', borderRadius: 999, fontSize: 12, fontWeight: 600,
-                      border: `1px solid ${isActive ? t.color : 'rgba(255,255,255,0.12)'}`,
+                      padding: '4px 8px', borderRadius: 0, fontSize: 14, fontWeight: 600,
+                      border: 'none',
+                      borderBottom: isActive ? '2px solid #dddddd' : 'none',
+                      paddingBottom: isActive ? '2px' : '4px',
                       cursor: 'pointer', transition: 'all 0.15s',
-                      background: isActive ? t.bg : 'rgba(255,255,255,0.06)',
-                      color: isActive ? t.color : 'rgba(255,255,255,0.45)',
+                      background: 'transparent',
+                      color: '#dddddd',
                     }}
                   >
                     {t.label}
@@ -157,7 +160,7 @@ export default function MusicPanel({ open, onClose }: Props) {
                     style={{
                       padding: '4px 10px', borderRadius: 999, fontSize: 12,
                       border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                      background: selectedGenre === g.id ? '#34d399' : 'rgba(255,255,255,0.1)',
+                      background: selectedGenre === g.id ? '#dddddd' : 'rgba(255,255,255,0.1)',
                       color: selectedGenre === g.id ? '#000' : 'rgba(255,255,255,0.65)',
                     }}
                   >
@@ -171,12 +174,12 @@ export default function MusicPanel({ open, onClose }: Props) {
                 style={{
                   width: '100%', padding: '8px', borderRadius: 999, fontSize: 13,
                   fontWeight: 600, border: 'none', cursor: 'pointer',
-                  background: '#34d399', color: '#000',
-                  opacity: (!selectedGenre || isLoadingJamendo) ? 0.4 : 1,
+                  background: '#dddddd', color: '#000',
+                  opacity: (!selectedGenre || isLoadingJamendo || isPlaying) ? 0.4 : 1,
                   transition: 'opacity 0.2s',
                 }}
               >
-                {isLoadingJamendo ? '로딩 중…' : '▶ 스트리밍 시작'}
+                {isLoadingJamendo ? '로딩 중…' : '▶'}
               </button>
             </div>
           )}
@@ -192,7 +195,7 @@ export default function MusicPanel({ open, onClose }: Props) {
                     style={{
                       padding: '4px 10px', borderRadius: 999, fontSize: 12,
                       border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                      background: selectedTheme === t.id ? '#f97316' : 'rgba(255,255,255,0.1)',
+                      background: selectedTheme === t.id ? '#dddddd' : 'rgba(255,255,255,0.1)',
                       color: selectedTheme === t.id ? '#000' : 'rgba(255,255,255,0.65)',
                     }}
                   >
@@ -206,12 +209,12 @@ export default function MusicPanel({ open, onClose }: Props) {
                 style={{
                   width: '100%', padding: '8px', borderRadius: 999, fontSize: 13,
                   fontWeight: 600, border: 'none', cursor: 'pointer',
-                  background: '#f97316', color: '#000',
-                  opacity: (!selectedTheme || isLoadingJamendo) ? 0.4 : 1,
+                  background: '#dddddd', color: '#000',
+                  opacity: (!selectedTheme || isLoadingJamendo || isPlaying) ? 0.4 : 1,
                   transition: 'opacity 0.2s',
                 }}
               >
-                {isLoadingJamendo ? '로딩 중…' : '▶ 스트리밍 시작'}
+                {isLoadingJamendo ? '로딩 중…' : '▶'}
               </button>
             </div>
           )}
@@ -228,41 +231,20 @@ export default function MusicPanel({ open, onClose }: Props) {
               <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24" style={{ opacity: 0.3 }}>
                 <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
               </svg>
-              <span>{tab === 'local' ? '파일을 추가해주세요' : tab === 'genre' ? '장르를 선택 후 시작하세요' : '테마를 선택 후 시작하세요'}</span>
+              <span>{tab === 'genre' ? '장르를 선택 후 시작하세요' : tab === 'theme' ? '테마를 선택 후 시작하세요' : ''}</span>
             </div>
           ) : (
             allTracks.map((t) => (
               <div
                 key={t.id}
-                onClick={() => { setTrack(t); onClose() }}
+                onClick={() => { setTrack(t); setIsPlaying(true) }}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  padding: '10px 16px', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 0,
+                  padding: '10px 16px 10px 36px', cursor: 'pointer',
                   background: currentTrack?.id === t.id ? 'rgba(255,255,255,0.08)' : 'transparent',
                   transition: 'background 0.15s',
                 }}
               >
-                <div style={{
-                  width: 36, height: 36, borderRadius: 6, flexShrink: 0,
-                  background: currentTrack?.id === t.id ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.07)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {currentTrack?.id === t.id ? (
-                    <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 16 }}>
-                      {[1, 1.5, 0.8, 1.3].map((h, i) => (
-                        <div key={i} style={{
-                          width: 3, background: 'white', borderRadius: 1,
-                          height: `${h * 10}px`,
-                          animation: `bar-bounce 0.6s ease-in-out ${i * 0.15}s infinite alternate`,
-                        }} />
-                      ))}
-                    </div>
-                  ) : (
-                    <svg width="14" height="14" fill="rgba(255,255,255,0.4)" viewBox="0 0 24 24">
-                      <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                    </svg>
-                  )}
-                </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{
                     color: currentTrack?.id === t.id ? 'white' : 'rgba(255,255,255,0.75)',

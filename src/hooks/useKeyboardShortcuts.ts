@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { usePlayerStore } from '@/store/playerStore'
 
-const MODES = ['nebula-cloud', 'pulsar-rings', 'star-field', 'crystal-lattice', 'plasma-flow'] as const
+const MODES = ['nebula-cloud', 'star-field', 'crystal-lattice', 'freq-terrain', 'morph-blob', 'tunnel-warp'] as const
 
 export function useKeyboardShortcuts(
   audioRef: React.RefObject<HTMLAudioElement | null>,
@@ -19,7 +19,7 @@ export function useKeyboardShortcuts(
         audioRef.current.muted = !audioRef.current.muted
       }
       const num = parseInt(e.key)
-      if (num >= 1 && num <= 5) setVisualMode(MODES[num - 1])
+      if (num >= 1 && num <= 6) setVisualMode(MODES[num - 1])
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)

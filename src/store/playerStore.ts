@@ -3,6 +3,19 @@ import type { Track } from '@/types/track'
 import type { VisualMode } from '@/types/visual'
 import { fetchGenreQueue, fetchThemeQueue, type GenreId, type ThemeId } from '@/api/deezer'
 
+const VISUAL_MODES: VisualMode[] = [
+  'nebula-cloud',
+  'star-field',
+  'crystal-lattice',
+  'freq-terrain',
+  'morph-blob',
+  'tunnel-warp',
+]
+
+const getRandomMode = (): VisualMode => {
+  return VISUAL_MODES[Math.floor(Math.random() * VISUAL_MODES.length)]
+}
+
 interface PlayerState {
   track: Track | null
   playlist: Track[]
@@ -35,7 +48,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   isPlaying: false,
   currentTime: 0,
   duration: 0,
-  volume: 0.8,
+  volume: 0.5,
   visualMode: 'nebula-cloud',
   isLoadingJamendo: false,
 
@@ -58,10 +71,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const { track, playlist, jamendoQueue } = get()
     const combined = [...playlist, ...jamendoQueue]
     if (combined.length === 0) return
-    if (!track) { set({ track: combined[0] }); return }
+    if (!track) { set({ track: combined[0], visualMode: getRandomMode() }); return }
     const idx = combined.findIndex((t) => t.id === track.id)
     const next = combined[(idx + 1) % combined.length]
-    set({ track: next })
+    set({ track: next, visualMode: getRandomMode() })
     // Prefetch more Jamendo tracks when queue runs low
     if (jamendoQueue.length < 5 && track.genre) {
       fetchGenreQueue(track.genre as GenreId, 20).then((tracks) => {
@@ -76,7 +89,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (combined.length === 0 || !track) return
     const idx = combined.findIndex((t) => t.id === track.id)
     const prev = combined[(idx - 1 + combined.length) % combined.length]
-    set({ track: prev })
+    set({ track: prev, visualMode: getRandomMode() })
   },
 
   startGenreStream: async (genre) => {
@@ -85,7 +98,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const tracks = await fetchGenreQueue(genre, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true })
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode() })
     } finally {
       set({ isLoadingJamendo: false })
     }
@@ -97,7 +110,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const tracks = await fetchThemeQueue(themeId, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true })
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode() })
     } finally {
       set({ isLoadingJamendo: false })
     }

@@ -5,14 +5,12 @@ import { createMode } from './modeRegistry'
 
 // Per-mode background personality: each mode owns a distinct visual environment
 const BG_CONFIG: Record<VisualMode, { pattern: number; dim: number; hue: number; hueSpeed: number }> = {
-  'nebula-cloud':    { pattern: 0, dim: 0.00, hue: 0.62, hueSpeed: 0.04 }, // radial pulse, blue-purple nebula
-  'star-field':      { pattern: 4, dim: 0.06, hue: 0.64, hueSpeed: 0.005 }, // diamond, near-black deep space
+  'nebula-cloud':    { pattern: 0, dim: 0.50, hue: 0.82, hueSpeed: 0.04 }, // radial pulse, blue-purple nebula
+  'star-field':      { pattern: 3, dim: 0.06, hue: 0.64, hueSpeed: 0.005 }, // diamond, near-black deep space
   'crystal-lattice': { pattern: 1, dim: 0.40, hue: 0.82, hueSpeed: 0.05 }, // spiral, magenta gem vault
-  'plasma-flow':     { pattern: 0, dim: 0.00, hue: 0.00, hueSpeed: 0.00 }, // plasma covers everything
   'freq-terrain':    { pattern: 2, dim: 0.22, hue: 0.38, hueSpeed: 0.02 }, // grid, dark green matrix
-  'morph-blob':      { pattern: 3, dim: 0.38, hue: 0.02, hueSpeed: 0.06 }, // diagonal waves, warm red-orange
-  'tunnel-warp':     { pattern: 4, dim: 0.04, hue: 0.55, hueSpeed: 0.008 }, // diamond, near-black tunnel
-  'kaleidoscope':    { pattern: 0, dim: 0.60, hue: 0.78, hueSpeed: 0.07 }, // radial, vivid pink
+  'morph-blob':      { pattern: 10, dim: 0.38, hue: 0.02, hueSpeed: 0.06 }, // diagonal waves, warm red-orange
+  'tunnel-warp':     { pattern: 4, dim: 0.28, hue: 0.55, hueSpeed: 0.008 }, // diamond, tunnel
 }
 
 export class Renderer {
@@ -125,6 +123,11 @@ export class Renderer {
     this.ambientLight = new THREE.AmbientLight(0xffffff, 0.8)
     this.scene.add(this.ambientLight)
 
+    // Directional light for depth
+    const dirLight = new THREE.DirectionalLight(0xffffff, 0.6)
+    dirLight.position.set(10, 15, 10)
+    this.scene.add(dirLight)
+
     this.camera = new THREE.PerspectiveCamera(75, container.clientWidth / container.clientHeight, 0.1, 2000)
     this.camera.position.z = 30
 
@@ -132,7 +135,7 @@ export class Renderer {
 
     this.currentMode = createMode(initialMode, this.scene)
     this.currentMode.onModeEnter?.()
-    this.isOrtho = initialMode === 'plasma-flow' || initialMode === 'kaleidoscope'
+    this.isOrtho = false
     this._applyBgConfig(initialMode)
 
     const onResize = () => {
@@ -164,7 +167,7 @@ export class Renderer {
     this.currentMode = createMode(mode, this.scene)
     this.currentMode.onModeEnter?.()
     this.activeVisualMode = mode
-    this.isOrtho = mode === 'plasma-flow' || mode === 'kaleidoscope'
+    this.isOrtho = false
     this._applyBgConfig(mode)
   }
 

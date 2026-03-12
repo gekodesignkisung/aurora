@@ -2,10 +2,10 @@ import * as THREE from 'three'
 import type { IVisualMode } from '@/types/visual'
 import type { AudioData } from '@/types/audio'
 
-const COLS = 64
-const ROWS = 48
-const W = 42
-const H = 30
+const COLS = 32
+const ROWS = 80
+const W = 28
+const H = 50
 
 function hsl2rgb(h: number, s: number, l: number): [number, number, number] {
   const a = s * Math.min(l, 1 - l)
@@ -51,12 +51,19 @@ export class FreqTerrain implements IVisualMode {
     this.geo.setAttribute('color',    new THREE.BufferAttribute(this.colors, 3).setUsage(THREE.DynamicDrawUsage))
     this.geo.setIndex(indices)
 
-    this.mesh = new THREE.Mesh(this.geo, new THREE.MeshBasicMaterial({
+    // Add normals for 3D lighting
+    this.geo.computeVertexNormals()
+
+    this.mesh = new THREE.Mesh(this.geo, new THREE.MeshPhongMaterial({
       vertexColors: true,
-      wireframe: true,
+      emissive: 0x000000,
+      shininess: 100,
+      wireframe: false,
     }))
 
     this.group.add(this.mesh)
+    // Zoom in vertically for elongated look
+    this.group.scale.y = 1.3
     scene.add(this.group)
   }
 
@@ -76,12 +83,12 @@ export class FreqTerrain implements IVisualMode {
 
         // Z displacement toward camera (terrain "mountains" pop toward viewer)
         const travel = Math.sin(iy / ROWS * Math.PI * 3 - elapsed * 2.2 + ix * 0.08)
-        this.positions[v*3+2] = (amp * 9 + travel * amp * 3) * env + this.beatFlash * 1.5 * env
+        this.positions[v*3+2] = (amp * 20 + travel * amp * 7) * env + this.beatFlash * 4 * env
 
         // Color: hue sweeps across X (frequency) + brightness from amplitude
-        const h = ((ix / COLS) * 0.65 + elapsed * 0.018 + bass * 0.1) % 1
-        const l = 0.12 + amp * 0.68 + this.beatFlash * 0.1
-        const [r, g, b] = hsl2rgb(h, 0.95, l)
+        const h = ((ix / COLS) * 1.0 + elapsed * 0.035 + bass * 0.15) % 1
+        const l = 0.35 + amp * 0.65 + this.beatFlash * 0.2
+        const [r, g, b] = hsl2rgb(h, 1.0, l)
         this.colors[v*3] = r; this.colors[v*3+1] = g; this.colors[v*3+2] = b
       }
     }
