@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { AudioAnalyzer } from '@/audio/AudioAnalyzer'
 import { usePlayerStore } from '@/store/playerStore'
+import { useUIStore } from '@/store/uiStore'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import ModeSelector from './ModeSelector'
 
@@ -20,6 +21,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     setIsPlaying, setCurrentTime, setDuration, setVolume,
     nextTrack, prevTrack,
   } = usePlayerStore()
+  const setMusicPanelOpen = useUIStore((s) => s.setMusicPanelOpen)
 
   const analyzerConnected = useRef(false)
 
@@ -72,7 +74,14 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current
-    if (!audio || !track) return
+    if (!audio) return
+
+    // If no track, open music panel
+    if (!track) {
+      setMusicPanelOpen(true)
+      return
+    }
+
     ensureAnalyzer()
     if (isPlaying) {
       audio.pause()
@@ -81,7 +90,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
       audio.play().catch(() => {})
       wasPlayingRef.current = true
     }
-  }, [audioRef, isPlaying, track, ensureAnalyzer])
+  }, [audioRef, isPlaying, track, ensureAnalyzer, setMusicPanelOpen])
 
   useKeyboardShortcuts(audioRef, togglePlay)
 

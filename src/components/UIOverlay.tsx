@@ -1,5 +1,4 @@
 'use client'
-import { useState } from 'react'
 import { useUIStore } from '@/store/uiStore'
 import { useIdleHide } from '@/hooks/useIdleHide'
 import type { AudioAnalyzer } from '@/audio/AudioAnalyzer'
@@ -15,14 +14,15 @@ interface Props {
 export default function UIOverlay({ audioRef, analyzerRef }: Props) {
   useIdleHide()
   const showUI = useUIStore((s) => s.showUI)
-  const [panelOpen, setPanelOpen] = useState(false)
+  const musicPanelOpen = useUIStore((s) => s.musicPanelOpen)
+  const setMusicPanelOpen = useUIStore((s) => s.setMusicPanelOpen)
 
   return (
     <>
       <DropZone />
       {/* Panel toggle button — top right */}
       <button
-        onClick={() => setPanelOpen((v) => !v)}
+        onClick={() => setMusicPanelOpen(!musicPanelOpen)}
         style={{
           position: 'fixed', top: '50px', right: '50px', zIndex: 20,
           width: 72, height: 72, borderRadius: '50%',
@@ -40,7 +40,7 @@ export default function UIOverlay({ audioRef, analyzerRef }: Props) {
       <div style={{ display: showUI ? 'block' : 'none' }}>
         <PlayerControls audioRef={audioRef} analyzerRef={analyzerRef} />
       </div>
-      <MusicPanel open={panelOpen} onClose={() => setPanelOpen(false)} />
+      <MusicPanel open={musicPanelOpen} onClose={() => setMusicPanelOpen(false)} />
     </>
   )
 }
