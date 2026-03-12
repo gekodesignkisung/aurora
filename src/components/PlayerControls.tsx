@@ -177,7 +177,14 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
       <div style={{ flex: '1 0 0' }} />
 
       {/* Bottom: Row 1 - Play button + Main progress bar */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexShrink: 0 }}>
+      <div style={{
+        display: 'flex',
+        flexDirection: isMobile ? 'column' : 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: isMobile ? 20 : 16,
+        flexShrink: 0
+      }}>
         {/* Play button */}
         <button
           onClick={togglePlay}
@@ -198,7 +205,15 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
         </button>
 
         {/* Main progress bar */}
-        <div style={{ flex: '1 0 0', position: 'relative', height: 52, display: 'flex', alignItems: 'center', marginLeft: 20 }}>
+        <div style={{
+          width: isMobile ? '100%' : 'auto',
+          flex: isMobile ? 'none' : '1 0 0',
+          position: 'relative',
+          height: 52,
+          display: 'flex',
+          alignItems: 'center',
+          marginLeft: isMobile ? 0 : 20
+        }}>
           <div style={{
             position: 'absolute', width: '100%', height: 2,
             background: 'rgba(255,255,255,0.5)', borderRadius: 50,
