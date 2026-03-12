@@ -135,7 +135,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
       position: 'fixed', inset: 0,
       display: 'flex', flexDirection: 'column',
       padding: `${padding} ${padding} ${bottomPadding} ${padding}`,
-      gap: '10px',
+      gap: isMobile ? '20px' : '10px',
       pointerEvents: 'auto',
       fontFamily: 'Inter, -apple-system, sans-serif',
     }}>
@@ -251,7 +251,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
         justifyContent: 'space-between',
         paddingLeft: isMobile ? '16px' : 72,
         paddingRight: isMobile ? '16px' : 72,
-        gap: isMobile ? '16px' : 0,
+        gap: isMobile ? '32px' : 0,
         flexShrink: 0
       }}>
         {/* Volume control */}
