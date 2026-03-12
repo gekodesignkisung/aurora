@@ -155,7 +155,7 @@ export default function MusicPanel({ open, onClose }: Props) {
           {/* Genre tab */}
           {tab === 'genre' && (
             <div style={{ minHeight: 180 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10, minHeight: 50 }}>
                 {GENRES.map((g) => (
                   <button
                     key={g.id}
@@ -196,7 +196,7 @@ export default function MusicPanel({ open, onClose }: Props) {
           {/* Theme tab */}
           {tab === 'theme' && (
             <div style={{ minHeight: 180 }}>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10, minHeight: 50 }}>
                 {THEMES.map((t) => (
                   <button
                     key={t.id}
