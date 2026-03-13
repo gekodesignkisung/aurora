@@ -332,7 +332,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
                 {track?.source === 'local' ? 'Local' : displayLabel}
               </p>
             )}
-            {(track || displayLabel) && (
+            {(track || playingStreamLabel) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: btnGap }}>
                 <button onClick={prevTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s, opacity 0.15s' }}
                   onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
