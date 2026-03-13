@@ -39,7 +39,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
   const {
     track, isPlaying, currentTime, duration, volume,
     setIsPlaying, setCurrentTime, setDuration, setVolume,
-    nextTrack, prevTrack, playingStreamLabel, loadGenreQueue,
+    nextTrack, prevTrack, playingStreamLabel, startGenreStream,
   } = usePlayerStore()
   const { setMusicPanelOpen, selectedGenre, selectedTheme, currentPanelTab, setGenre } = useUIStore()
   const { isMobile } = useResponsive()
@@ -127,8 +127,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
       const defaultGenreId = GENRES[0].id as typeof GENRES[0]['id']
       ensureAnalyzer()
       setGenre(defaultGenreId)
-      loadGenreQueue(defaultGenreId)
-      setIsPlaying(true)
+      startGenreStream(defaultGenreId)
       return
     }
     ensureAnalyzer()
@@ -139,7 +138,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
       audio.play().catch(() => {})
       wasPlayingRef.current = true
     }
-  }, [audioRef, isPlaying, track, ensureAnalyzer, setGenre, loadGenreQueue, setIsPlaying])
+  }, [audioRef, isPlaying, track, ensureAnalyzer, setGenre, startGenreStream])
 
   useKeyboardShortcuts(audioRef, togglePlay)
 
