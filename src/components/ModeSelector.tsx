@@ -1,5 +1,6 @@
 import { usePlayerStore } from '@/store/playerStore'
 import { useResponsive } from '@/hooks/useResponsive'
+import { useRef, useEffect } from 'react'
 import type { VisualMode } from '@/types/visual'
 
 const MODES: { id: VisualMode; label: string; key: string }[] = [
@@ -15,12 +16,37 @@ const MODES: { id: VisualMode; label: string; key: string }[] = [
 export default function ModeSelector() {
   const { visualMode, setVisualMode } = usePlayerStore()
   const { isMobile } = useResponsive()
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll to selected button on mobile
+  useEffect(() => {
+    if (!isMobile || !containerRef.current) return
+
+    const selectedButton = containerRef.current.querySelector(
+      `button[data-mode="${visualMode}"]`
+    ) as HTMLElement
+
+    if (!selectedButton) return
+
+    const container = containerRef.current
+    const buttonLeft = selectedButton.offsetLeft
+    const buttonWidth = selectedButton.offsetWidth
+    const containerWidth = container.offsetWidth
+
+    // Center the button in the viewport
+    const scrollLeft = buttonLeft + buttonWidth / 2 - containerWidth / 2
+    container.scrollTo({
+      left: Math.max(0, scrollLeft),
+      behavior: 'smooth',
+    })
+  }, [visualMode, isMobile])
 
   return (
-    <div style={{ display: 'flex', flexWrap: 'nowrap', gap: 10, overflowX: isMobile ? 'auto' : 'visible', alignItems: 'flex-start', justifyContent: isMobile ? 'flex-start' : 'center', paddingTop: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: isMobile ? 'calc(100% - 32px)' : 'auto', minWidth: 0 }}>
+    <div ref={containerRef} style={{ display: 'flex', flexWrap: 'nowrap', gap: 10, overflowX: isMobile ? 'auto' : 'visible', alignItems: 'flex-start', justifyContent: isMobile ? 'flex-start' : 'center', paddingTop: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: isMobile ? 'calc(100% - 32px)' : 'auto', minWidth: 0 }}>
       {MODES.map((m) => (
         <button
           key={m.id}
+          data-mode={m.id}
           onClick={() => setVisualMode(m.id)}
           style={{
             padding: '10px 22px',
