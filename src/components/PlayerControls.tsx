@@ -309,7 +309,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
         return (
           <div style={{
             position: 'fixed',
-            top: `calc(50% + ${geo.SVG_SIZE / 2 - geo.btnSize / 2 - labelTopOffset + 30}px)`,
+            top: `calc(50% + ${geo.SVG_SIZE / 2 - geo.btnSize / 2 - labelTopOffset - 20}px)`,
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? 20 : 32,
