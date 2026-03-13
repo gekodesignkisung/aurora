@@ -125,6 +125,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     if (!track) {
       // Load and play default genre (first in list) on first play
       const defaultGenreId = GENRES[0].id as typeof GENRES[0]['id']
+      ensureAnalyzer()
       setGenre(defaultGenreId)
       loadGenreQueue(defaultGenreId)
       setIsPlaying(true)
