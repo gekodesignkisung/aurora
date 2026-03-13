@@ -20,8 +20,8 @@ const TOTAL_DEG   = 270                     // 270° arc
 // Size configuration helper
 const getGeometry = (isMobile: boolean) => {
   if (isMobile) {
-    const R = 70
-    return { R, CX: 80, CY: 80, SVG_SIZE: 160, btnSize: 70 }
+    const R = 85
+    return { R, CX: 95, CY: 95, SVG_SIZE: 190, btnSize: 85 }
   }
   const R = 100
   return { R, CX: 110, CY: 110, SVG_SIZE: 220, btnSize: 100 }
