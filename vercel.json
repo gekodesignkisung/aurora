@@ -3,6 +3,10 @@
     {
       "source": "/deezer/:path*",
       "destination": "https://api.deezer.com/:path*"
+    },
+    {
+      "source": "/jamendo/:path*",
+      "destination": "https://api.jamendo.com/:path*"
     }
   ]
 }

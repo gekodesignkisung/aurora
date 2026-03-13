@@ -1,10 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { AudioAnalyzer } from '@/audio/AudioAnalyzer'
 import { usePlayerStore } from '@/store/playerStore'
 import { useUIStore } from '@/store/uiStore'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
 import { useResponsive } from '@/hooks/useResponsive'
-import { GENRES, THEMES } from '@/api/deezer'
+import { GENRES, THEMES } from '@/api/jamendo'
 import ModeSelector from './ModeSelector'
 
 interface Props {
@@ -34,35 +34,21 @@ const getArcLength = (R: number) => {
 
 
 export default function PlayerControls({ audioRef, analyzerRef }: Props) {
-  const [showUI, setShowUI] = useState(true)
-  const hideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const {
     track, isPlaying, currentTime, duration, volume,
     setIsPlaying, setCurrentTime, setDuration, setVolume,
-    nextTrack, prevTrack, playingStreamLabel, startGenreStream,
+    nextTrack, prevTrack, playingStreamLabel, startGenreStream, startThemeStream,
   } = usePlayerStore()
   const { setMusicPanelOpen, selectedGenre, selectedTheme, currentPanelTab, setGenre } = useUIStore()
   const { isMobile } = useResponsive()
   const analyzerConnected = useRef(false)
+  const trackTransitionRef = useRef(false)
   const pad = isMobile ? '20px' : '50px'
 
   // Geometry for ring based on screen size
   const geo = getGeometry(isMobile)
   const ARC_LEN = getArcLength(geo.R)
   const CIRCUM = 2 * Math.PI * geo.R
-
-  const resetHideTimer = useCallback(() => {
-    if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
-    setShowUI(true)
-    hideTimeoutRef.current = setTimeout(() => setShowUI(false), 30000)
-  }, [])
-
-  useEffect(() => {
-    resetHideTimer()
-    return () => {
-      if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
-    }
-  }, [resetHideTimer])
 
   const ensureAnalyzer = useCallback(() => {
     const audio = audioRef.current
@@ -82,7 +68,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     const onDur   = () => setDuration(audio.duration)
     const onEnd   = () => nextTrack()
     const onPlay  = () => { setIsPlaying(true);  analyzerRef.current?.resume() }
-    const onPause = () => setIsPlaying(false)
+    const onPause = () => { if (!trackTransitionRef.current) setIsPlaying(false) }
     audio.addEventListener('timeupdate', onTime)
     audio.addEventListener('durationchange', onDur)
     audio.addEventListener('ended', onEnd)
@@ -97,48 +83,67 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     }
   }, [audioRef, analyzerRef, setCurrentTime, setDuration, setIsPlaying, nextTrack])
 
+  // Track change: always load and play
   useEffect(() => {
     const audio = audioRef.current
     if (!audio || !track) return
+    trackTransitionRef.current = true
+    userPausedRef.current = false
     audio.src = track.src
     audio.volume = volume
     audio.load()
     ensureAnalyzer()
-    if (isPlaying) {
-      audio.play().catch((err) => {
-        console.error('Playback failed:', err)
-        setIsPlaying(false)
-      })
-    }
+    audio.play()
+      .then(() => { trackTransitionRef.current = false })
+      .catch(() => { trackTransitionRef.current = false; setIsPlaying(false) })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [track, isPlaying])
+  }, [track])
+
+  // Pause/resume toggle (no reload)
+  const prevIsPlayingRef = useRef(isPlaying)
+  useEffect(() => {
+    if (prevIsPlayingRef.current === isPlaying) return
+    prevIsPlayingRef.current = isPlaying
+    const audio = audioRef.current
+    if (!audio || !track) return
+    if (isPlaying) audio.play().catch(() => setIsPlaying(false))
+    else audio.pause()
+  }, [isPlaying, track, audioRef, setIsPlaying])
 
   useEffect(() => {
     if (audioRef.current) audioRef.current.volume = volume
   }, [volume, audioRef])
 
-  const wasPlayingRef = useRef(false)
+  // true = 사용자가 명시적으로 pause 누름 / false = 자동재생 모드
+  const userPausedRef = useRef(false)
 
   const togglePlay = useCallback(() => {
     const audio = audioRef.current
     if (!audio) return
     if (!track) {
-      // Load and play default genre (first in list) on first play
-      const defaultGenreId = GENRES[0].id as typeof GENRES[0]['id']
       ensureAnalyzer()
-      setGenre(defaultGenreId)
-      startGenreStream(defaultGenreId)
+      userPausedRef.current = false
+      if (selectedTheme) {
+        startThemeStream(selectedTheme)
+      } else if (selectedGenre) {
+        setGenre(selectedGenre)
+        startGenreStream(selectedGenre)
+      } else {
+        const defaultGenreId = GENRES[0].id as typeof GENRES[0]['id']
+        setGenre(defaultGenreId)
+        startGenreStream(defaultGenreId)
+      }
       return
     }
     ensureAnalyzer()
     if (isPlaying) {
       audio.pause()
-      wasPlayingRef.current = false
+      userPausedRef.current = true
     } else {
       audio.play().catch(() => {})
-      wasPlayingRef.current = true
+      userPausedRef.current = false
     }
-  }, [audioRef, isPlaying, track, ensureAnalyzer, setGenre, startGenreStream])
+  }, [audioRef, isPlaying, track, ensureAnalyzer, selectedTheme, selectedGenre, setGenre, startGenreStream, startThemeStream])
 
   useKeyboardShortcuts(audioRef, togglePlay)
 
@@ -149,26 +154,68 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     return () => window.removeEventListener('aurora:pause', handler)
   }, [audioRef])
 
+  // Media Session API — 모바일 백그라운드 재생 허용
   useEffect(() => {
-    const onBlur  = () => { wasPlayingRef.current = isPlaying }
+    if (!('mediaSession' in navigator)) return
+    if (!track) return
+    navigator.mediaSession.metadata = new MediaMetadata({
+      title: track.name,
+      artist: track.artist,
+      album: track.album ?? '',
+      artwork: track.coverUrl ? [{ src: track.coverUrl, sizes: '300x300', type: 'image/jpeg' }] : [],
+    })
+  }, [track])
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return
+    navigator.mediaSession.setActionHandler('play', () => {
+      userPausedRef.current = false
+      audioRef.current?.play().catch(() => {})
+    })
+    navigator.mediaSession.setActionHandler('pause', () => {
+      userPausedRef.current = true
+      audioRef.current?.pause()
+    })
+    navigator.mediaSession.setActionHandler('previoustrack', () => prevTrack())
+    navigator.mediaSession.setActionHandler('nexttrack', () => nextTrack())
+    return () => {
+      navigator.mediaSession.setActionHandler('play', null)
+      navigator.mediaSession.setActionHandler('pause', null)
+      navigator.mediaSession.setActionHandler('previoustrack', null)
+      navigator.mediaSession.setActionHandler('nexttrack', null)
+    }
+  }, [audioRef, prevTrack, nextTrack])
+
+  // visibilitychange — 탭 복귀 시 AudioContext 재개
+  useEffect(() => {
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        analyzerRef.current?.resume()
+        const a = audioRef.current
+        if (a && a.src && !userPausedRef.current && a.paused) a.play().catch(() => {})
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => document.removeEventListener('visibilitychange', onVisibility)
+  }, [analyzerRef, audioRef])
+
+  useEffect(() => {
     const onFocus = () => {
       analyzerRef.current?.resume()
       const a = audioRef.current
-      if (a && wasPlayingRef.current && a.paused) a.play().catch(() => {})
+      if (a && a.src && !userPausedRef.current && a.paused) a.play().catch(() => {})
     }
     const iv = setInterval(() => {
       analyzerRef.current?.resume()
       const a = audioRef.current
-      if (a && wasPlayingRef.current && a.paused) a.play().catch(() => {})
+      if (a && a.src && !userPausedRef.current && a.paused) a.play().catch(() => {})
     }, 1000)
-    window.addEventListener('blur', onBlur)
     window.addEventListener('focus', onFocus)
     return () => {
-      window.removeEventListener('blur', onBlur)
       window.removeEventListener('focus', onFocus)
       clearInterval(iv)
     }
-  }, [isPlaying, analyzerRef, audioRef])
+  }, [analyzerRef, audioRef])
 
   const progress   = duration > 0 ? currentTime / duration : 0
   const filled     = progress * ARC_LEN
@@ -192,22 +239,8 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
 
   return (
     <>
-      {/* Full screen activity tracker */}
-      <div style={{
-        position: 'fixed', inset: 0,
-        pointerEvents: 'auto',
-        zIndex: 0,
-      }}
-        onMouseMove={resetHideTimer}
-        onClick={(e) => {
-          e.stopPropagation()
-          resetHideTimer()
-        }}
-      />
-
       {/* ── Top right: Track info  +  Bottom: Mode buttons ── */}
-      {showUI && (
-        <div style={{
+      <div style={{
           position: 'fixed', inset: 0,
           display: 'flex', flexDirection: 'column',
           alignItems: 'flex-end',
@@ -230,19 +263,17 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
                   </svg>
                 </div>
               )}
-              {/* Vertical text — title + artist side by side, flowing downward */}
+              {/* Vertical text — artist + album, flowing downward */}
               <div style={{ display: 'flex', gap: 2, maxHeight: isMobile ? 200 : 300, overflow: 'hidden' }}>
                 <p style={{ writingMode: 'vertical-rl', color: '#BBBBBB', fontWeight: 400, fontSize: isMobile ? 13 : 18, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.artist}</p>
-                <p style={{ writingMode: 'vertical-rl', color: '#ffffff', fontWeight: 400, fontSize: isMobile ? 14 : 20, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.name}</p>
+                <p style={{ writingMode: 'vertical-rl', color: '#ffffff', fontWeight: 400, fontSize: isMobile ? 14 : 20, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.album ?? track.name}</p>
               </div>
             </div>
           )}
         </div>
-      )}
 
       {/* ── Bottom center: Mode buttons ── */}
-      {showUI && (
-        <div style={{
+      <div style={{
           position: 'fixed', bottom: isMobile ? 22 : 60, left: 0, right: 0,
           display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center',
           pointerEvents: 'none',
@@ -257,10 +288,8 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
             <ModeSelector />
           </div>
         </div>
-      )}
 
       {/* ── Ring — fixed at exact screen center ── */}
-      {(showUI || !isMobile) && (
       <div style={{
         position: 'fixed', top: `calc(50% - ${geo.SVG_SIZE / 2 - 30}px)`, left: '50%',
         transform: 'translate(-50%, -50%)',
@@ -300,14 +329,13 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           </button>
         </div>
       </div>
-      )}
 
       {/* ── Volume slider + Prev/Next — fixed, centered below ring ── */}
-      {showUI && (() => {
+      {(() => {
         const btnSize  = isMobile ? 70 : 80
         const btnGap   = isMobile ? 70 : 100
         const volH     = 120
-        const labelTopOffset = isMobile ? 20 : 0
+        const labelTopOffset = 0
         let displayLabel: string | null = null
         if (playingStreamLabel) {
           displayLabel = playingStreamLabel
@@ -319,7 +347,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
         return (
           <div style={{
             position: 'fixed',
-            top: `calc(50% + ${geo.SVG_SIZE / 2 - geo.btnSize / 2 - labelTopOffset - 20}px)`,
+            top: `calc(50% + ${geo.SVG_SIZE / 2 - geo.btnSize / 2 - labelTopOffset - 55}px)`,
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? 20 : 32,
@@ -327,10 +355,24 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
             minWidth: 'max-content',
             zIndex: 2,
           }}>
-            {(track?.source === 'local' || displayLabel) && (
-              <p style={{ color: '#ffffff', fontSize: isMobile ? 13 : 16, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, textAlign: 'center', fontWeight: 500 }}>
-                {track?.source === 'local' ? 'Local' : displayLabel}
-              </p>
+            {(track || displayLabel) && (
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: isMobile ? 260 : 360 }}>
+                {track?.name && (
+                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: isMobile ? 16 : 18, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, textAlign: 'center', fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '4px' }}>
+                    {(() => { const rem = Math.max(0, duration - currentTime); return `${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(Math.floor(rem % 60)).padStart(2, '0')}` })()}
+                  </p>
+                )}
+                {track?.name && (
+                  <p style={{ color: '#ffffff', fontSize: isMobile ? 16 : 20, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, marginTop: 20, textAlign: 'center', fontWeight: 400, letterSpacing: '0.05em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                    {track.name}
+                  </p>
+                )}
+                {track?.artist && (
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? 14 : 16, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, marginTop: 4, textAlign: 'center', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                    {track.artist}
+                  </p>
+                )}
+              </div>
             )}
             {(track || playingStreamLabel) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: btnGap }}>

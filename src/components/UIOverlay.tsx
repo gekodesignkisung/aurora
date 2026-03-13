@@ -1,6 +1,5 @@
 'use client'
 import { useUIStore } from '@/store/uiStore'
-import { useIdleHide } from '@/hooks/useIdleHide'
 import { useResponsive } from '@/hooks/useResponsive'
 import type { AudioAnalyzer } from '@/audio/AudioAnalyzer'
 import PlayerControls from './PlayerControls'
@@ -13,9 +12,7 @@ interface Props {
 }
 
 export default function UIOverlay({ audioRef, analyzerRef }: Props) {
-  useIdleHide(10000)
   const { isMobile } = useResponsive()
-  const showUI = useUIStore((s) => s.showUI)
   const musicPanelOpen = useUIStore((s) => s.musicPanelOpen)
   const setMusicPanelOpen = useUIStore((s) => s.setMusicPanelOpen)
 
@@ -43,10 +40,7 @@ export default function UIOverlay({ audioRef, analyzerRef }: Props) {
       >
         <img src="/icon-menu.svg" alt="menu" style={{ width: buttonSize, height: buttonSize }} />
       </button>
-      {/* Player controls fade with idle timer */}
-      <div style={{ display: showUI ? 'block' : 'none' }}>
-        <PlayerControls audioRef={audioRef} analyzerRef={analyzerRef} />
-      </div>
+      <PlayerControls audioRef={audioRef} analyzerRef={analyzerRef} />
       <MusicPanel open={musicPanelOpen} onClose={() => setMusicPanelOpen(false)} />
     </>
   )

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import type { Track } from '@/types/track'
 import type { VisualMode } from '@/types/visual'
-import { fetchGenreQueue, fetchThemeQueue, GENRES, THEMES, type GenreId, type ThemeId } from '@/api/deezer'
+import { fetchGenreQueue, fetchThemeQueue, GENRES, THEMES, type GenreId, type ThemeId } from '@/api/jamendo'
 
 const VISUAL_MODES: VisualMode[] = [
   'nebula-cloud',
@@ -27,6 +27,8 @@ interface PlayerState {
   visualMode: VisualMode
   isLoadingJamendo: boolean
   playingStreamLabel: string | null
+  cachedGenreId: GenreId | null
+  cachedThemeId: ThemeId | null
 
   setTrack: (track: Track | null) => void
   setPlaylist: (tracks: Track[]) => void
@@ -42,6 +44,7 @@ interface PlayerState {
   loadThemeQueue: (themeId: ThemeId) => Promise<void>
   startGenreStream: (genre: GenreId) => Promise<void>
   startThemeStream: (themeId: ThemeId) => Promise<void>
+  prefetch: (genre: GenreId) => void
 }
 
 export const usePlayerStore = create<PlayerState>((set, get) => ({
@@ -55,6 +58,8 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   visualMode: 'nebula-cloud',
   isLoadingJamendo: false,
   playingStreamLabel: null,
+  cachedGenreId: null,
+  cachedThemeId: null,
 
   setTrack: (track) => set({ track }),
   setPlaylist: (tracks) => set({ playlist: tracks }),
@@ -75,10 +80,10 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     const { track, playlist, jamendoQueue } = get()
     const combined = [...playlist, ...jamendoQueue]
     if (combined.length === 0) return
-    if (!track) { set({ track: combined[0] }); return }
+    if (!track) { set({ track: combined[0], isPlaying: true }); return }
     const idx = combined.findIndex((t) => t.id === track.id)
     const next = combined[(idx + 1) % combined.length]
-    set({ track: next })
+    set({ track: next, isPlaying: true })
     // Prefetch more Jamendo tracks when queue runs low
     if (jamendoQueue.length < 5 && track.genre) {
       fetchGenreQueue(track.genre as GenreId, 20).then((tracks) => {
@@ -93,56 +98,88 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (combined.length === 0 || !track) return
     const idx = combined.findIndex((t) => t.id === track.id)
     const prev = combined[(idx - 1 + combined.length) % combined.length]
-    set({ track: prev })
+    set({ track: prev, isPlaying: true })
   },
 
   loadGenreQueue: async (genre) => {
+    const { cachedGenreId, jamendoQueue } = get()
+    if (cachedGenreId === genre && jamendoQueue.length > 0) return
     set({ isLoadingJamendo: true })
     try {
       const tracks = await fetchGenreQueue(genre, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled })
+      set({ jamendoQueue: shuffled, cachedGenreId: genre, cachedThemeId: null })
     } finally {
       set({ isLoadingJamendo: false })
     }
   },
 
   loadThemeQueue: async (themeId) => {
+    const { cachedThemeId, jamendoQueue } = get()
+    if (cachedThemeId === themeId && jamendoQueue.length > 0) return
     set({ isLoadingJamendo: true })
     try {
       const tracks = await fetchThemeQueue(themeId, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled })
+      set({ jamendoQueue: shuffled, cachedThemeId: themeId, cachedGenreId: null })
     } finally {
       set({ isLoadingJamendo: false })
     }
   },
 
   startGenreStream: async (genre) => {
+    const { cachedGenreId, jamendoQueue } = get()
+    const label = GENRES.find((g) => g.id === genre)?.label ?? genre
+    // 이미 캐시된 큐가 있으면 즉시 재생
+    if (cachedGenreId === genre && jamendoQueue.length > 0) {
+      const shuffled = [...jamendoQueue].sort(() => Math.random() - 0.5)
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label })
+      return
+    }
     set({ isLoadingJamendo: true })
     try {
       const tracks = await fetchGenreQueue(genre, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      const label = GENRES.find((g) => g.id === genre)?.label ?? genre
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label })
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label, cachedGenreId: genre, cachedThemeId: null })
     } finally {
       set({ isLoadingJamendo: false })
     }
   },
 
   startThemeStream: async (themeId) => {
+    const { cachedThemeId, jamendoQueue } = get()
+    const label = THEMES.find((t) => t.id === themeId)?.label ?? themeId
+    // 이미 캐시된 큐가 있으면 즉시 재생
+    if (cachedThemeId === themeId && jamendoQueue.length > 0) {
+      const shuffled = [...jamendoQueue].sort(() => Math.random() - 0.5)
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label })
+      return
+    }
     set({ isLoadingJamendo: true })
     try {
       const tracks = await fetchThemeQueue(themeId, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      const label = THEMES.find((t) => t.id === themeId)?.label ?? themeId
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label })
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label, cachedThemeId: themeId, cachedGenreId: null })
     } finally {
       set({ isLoadingJamendo: false })
     }
+  },
+
+  prefetch: (genre) => {
+    const { cachedGenreId, jamendoQueue } = get()
+    if (cachedGenreId === genre && jamendoQueue.length > 0) return
+    fetchGenreQueue(genre, 30).then((tracks) => {
+      if (tracks.length === 0) return
+      const shuffled = [...tracks].sort(() => Math.random() - 0.5)
+      set((s) => {
+        // 이미 다른 장르가 로드됐으면 덮어쓰지 않음
+        if (s.cachedGenreId !== null && s.cachedGenreId !== genre) return {}
+        return { jamendoQueue: shuffled, cachedGenreId: genre }
+      })
+    }).catch(() => {})
   },
 }))

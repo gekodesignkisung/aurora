@@ -9,4 +9,5 @@ export interface Track {
   coverUrl?: string
   source: TrackSource
   genre?: string
+  album?: string
 }

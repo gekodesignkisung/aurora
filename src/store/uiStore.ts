@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { GenreId, ThemeId } from '@/api/deezer'
+import type { GenreId, ThemeId } from '@/api/jamendo'
 
 type ActivePanel = 'queue' | 'genres' | null
 type MusicPanelTab = 'genre' | 'theme' | 'local'
@@ -25,8 +25,8 @@ interface UIState {
 export const useUIStore = create<UIState>((set) => ({
   showUI: true,
   activePanel: 'genres',
-  selectedGenre: 'electro',
-  selectedTheme: 'workout',
+  selectedGenre: 'electronic',
+  selectedTheme: null,
   error: null,
   musicPanelOpen: false,
   currentPanelTab: 'genre',

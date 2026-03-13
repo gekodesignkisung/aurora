@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import { usePlayerStore } from '@/store/playerStore'
 import { useUIStore } from '@/store/uiStore'
 import { useResponsive } from '@/hooks/useResponsive'
-import { GENRES, THEMES, type GenreId, type ThemeId } from '@/api/deezer'
+import { GENRES, THEMES, type GenreId, type ThemeId } from '@/api/jamendo'
 import type { Track } from '@/types/track'
 
 interface Props {
@@ -42,7 +42,7 @@ export default function MusicPanel({ open, onClose }: Props) {
     track: currentTrack, playlist, jamendoQueue, isPlaying,
     setTrack, setIsPlaying,
     addLocalTracks, startGenreStream, startThemeStream, isLoadingJamendo,
-    loadGenreQueue, loadThemeQueue,
+    loadGenreQueue, loadThemeQueue, prefetch,
   } = usePlayerStore()
   const { selectedGenre, setGenre, selectedTheme, setTheme: setSelectedTheme, setCurrentPanelTab } = useUIStore()
 
@@ -51,18 +51,18 @@ export default function MusicPanel({ open, onClose }: Props) {
     setCurrentPanelTab(tab)
   }, [tab, setCurrentPanelTab])
 
-  // Load playlist when genre/theme is selected
+  // Load playlist when panel opens or genre/theme changes
   useEffect(() => {
-    if (tab === 'genre' && selectedGenre) {
+    if (open && tab === 'genre' && selectedGenre) {
       loadGenreQueue(selectedGenre)
     }
-  }, [tab, selectedGenre, loadGenreQueue])
+  }, [open, tab, selectedGenre, loadGenreQueue])
 
   useEffect(() => {
-    if (tab === 'theme' && selectedTheme) {
+    if (open && tab === 'theme' && selectedTheme) {
       loadThemeQueue(selectedTheme)
     }
-  }, [tab, selectedTheme, loadThemeQueue])
+  }, [open, tab, selectedTheme, loadThemeQueue])
 
   const allTracks: Track[] = tab === 'local' ? playlist : jamendoQueue
 
@@ -182,17 +182,13 @@ export default function MusicPanel({ open, onClose }: Props) {
                       padding: `${S.tagPadV}px ${S.tagPadH}px`,
                       borderRadius: S.tagRadius,
                       fontSize: S.tagFontSize, fontWeight: S.tagFontWeight, fontFamily: S.font,
-                      border: active ? '2px solid #ddd' : '2px solid transparent',
+                      border: active ? '2px solid transparent' : '2px solid transparent',
                       cursor: 'pointer', transition: 'all 0.2s',
-                      background: 'transparent',
-                      color: S.colorText,
+                      background: active ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.2)',
+                      color: active ? '#000000' : S.colorText,
                     }}
-                    onMouseEnter={(e) => {
-                      if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent'
-                    }}
+                    onMouseEnter={(e) => { prefetch(g.id as GenreId); if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.4)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = active ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.2)' }}
                   >
                     {g.label}
                   </button>
@@ -214,17 +210,13 @@ export default function MusicPanel({ open, onClose }: Props) {
                       padding: `${S.tagPadV}px ${S.tagPadH}px`,
                       borderRadius: S.tagRadius,
                       fontSize: S.tagFontSize, fontWeight: S.tagFontWeight, fontFamily: S.font,
-                      border: active ? '2px solid #ddd' : '2px solid transparent',
+                      border: '2px solid transparent',
                       cursor: 'pointer', transition: 'all 0.2s',
-                      background: 'transparent',
-                      color: S.colorText,
+                      background: active ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.2)',
+                      color: active ? '#000000' : S.colorText,
                     }}
-                    onMouseEnter={(e) => {
-                      if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.background = 'transparent'
-                    }}
+                    onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.4)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = active ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.2)' }}
                   >
                     {t.label}
                   </button>
