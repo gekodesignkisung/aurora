@@ -251,6 +251,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
       )}
 
       {/* ── Ring — fixed at exact screen center ── */}
+      {(showUI || !isMobile) && (
       <div style={{
         position: 'fixed', top: `calc(50% - ${geo.SVG_SIZE / 2}px)`, left: '50%',
         transform: 'translate(-50%, -50%)',
@@ -290,6 +291,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           </button>
         </div>
       </div>
+      )}
 
       {/* ── Volume slider + Prev/Next — fixed, centered below ring ── */}
       {showUI && (() => {
