@@ -246,8 +246,10 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           position: 'fixed', bottom: isMobile ? 22 : 60, left: 0, right: 0,
           display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center',
           pointerEvents: 'none',
-          padding: `0 ${isMobile ? '16px' : pad}`,
+          paddingTop: 0,
+          paddingRight: isMobile ? '16px' : pad,
           paddingBottom: 20,
+          paddingLeft: isMobile ? '16px' : pad,
           zIndex: 2,
           overflow: isMobile ? 'hidden' : 'visible',
         }}>
