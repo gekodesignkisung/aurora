@@ -308,6 +308,14 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
         const btnGap   = isMobile ? 70 : 100
         const volH     = 120
         const labelTopOffset = isMobile ? 20 : 0
+        let displayLabel: string | null = null
+        if (playingStreamLabel) {
+          displayLabel = playingStreamLabel
+        } else if (currentPanelTab === 'genre' && selectedGenre) {
+          displayLabel = GENRES.find(g => g.id === selectedGenre)?.label ?? null
+        } else if (currentPanelTab === 'theme' && selectedTheme) {
+          displayLabel = THEMES.find(t => t.id === selectedTheme)?.label ?? null
+        }
         return (
           <div style={{
             position: 'fixed',
@@ -319,53 +327,45 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
             minWidth: 'max-content',
             zIndex: 2,
           }}>
-            {(() => {
-              let displayLabel: string | null = null
-              if (playingStreamLabel) {
-                displayLabel = playingStreamLabel
-              } else if (currentPanelTab === 'genre' && selectedGenre) {
-                displayLabel = GENRES.find(g => g.id === selectedGenre)?.label ?? null
-              } else if (currentPanelTab === 'theme' && selectedTheme) {
-                displayLabel = THEMES.find(t => t.id === selectedTheme)?.label ?? null
-              }
-              return (track?.source === 'local' || displayLabel) && (
-                <p style={{ color: '#ffffff', fontSize: isMobile ? 13 : 16, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, textAlign: 'center', fontWeight: 500 }}>
-                  {track?.source === 'local' ? 'Local' : displayLabel}
-                </p>
-              )
-            })()}
-            <div style={{ display: 'flex', alignItems: 'center', gap: btnGap }}>
-              <button onClick={prevTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s, opacity 0.15s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
-                onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
-                onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-              >
-                <img src="/icon-prev.svg" alt="prev" style={{ width: btnSize, height: btnSize }} />
-              </button>
-              {/* Volume slider */}
-              <div style={{ position: 'relative', width: 20, height: volH, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <div style={{ position: 'absolute', width: 2, height: '100%', background: 'rgba(255,255,255,0.3)', borderRadius: 1 }} />
-                <div style={{ position: 'absolute', bottom: 0, width: 2, height: `${volume * 100}%`, background: '#ffffff', borderRadius: 1, transition: 'height 0.05s' }} />
-                <div style={{ position: 'absolute', bottom: `${volume * 100}%`, transform: 'translateY(50%)', width: 20, height: 20, background: '#ffffff', borderRadius: '50%', pointerEvents: 'none', transition: 'transform 0.15s, opacity 0.15s' }} />
-                <input type="range" min={0} max={100} value={Math.round(volume * 100)}
-                  onChange={(e) => setVolume(Number(e.target.value) / 100)}
-                  onMouseEnter={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.2)'; h.style.opacity = '0.6' } }}
-                  onMouseLeave={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1)'; h.style.opacity = '1' } }}
-                  onMouseDown={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.5)'; h.style.opacity = '1' } }}
-                  onMouseUp={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.2)'; h.style.opacity = '0.6' } }}
-                  style={{ position: 'absolute', width: volH, height: 20, transform: 'rotate(-90deg)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', background: 'transparent', border: 'none', outline: 'none', opacity: 0, zIndex: 5 } as React.CSSProperties}
-                />
+            {(track?.source === 'local' || displayLabel) && (
+              <p style={{ color: '#ffffff', fontSize: isMobile ? 13 : 16, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, textAlign: 'center', fontWeight: 500 }}>
+                {track?.source === 'local' ? 'Local' : displayLabel}
+              </p>
+            )}
+            {(track || displayLabel) && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: btnGap }}>
+                <button onClick={prevTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s, opacity 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
+                  onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
+                  onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+                >
+                  <img src="/icon-prev.svg" alt="prev" style={{ width: btnSize, height: btnSize }} />
+                </button>
+                {/* Volume slider */}
+                <div style={{ position: 'relative', width: 20, height: volH, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ position: 'absolute', width: 2, height: '100%', background: 'rgba(255,255,255,0.3)', borderRadius: 1 }} />
+                  <div style={{ position: 'absolute', bottom: 0, width: 2, height: `${volume * 100}%`, background: '#ffffff', borderRadius: 1, transition: 'height 0.05s' }} />
+                  <div style={{ position: 'absolute', bottom: `${volume * 100}%`, transform: 'translateY(50%)', width: 20, height: 20, background: '#ffffff', borderRadius: '50%', pointerEvents: 'none', transition: 'transform 0.15s, opacity 0.15s' }} />
+                  <input type="range" min={0} max={100} value={Math.round(volume * 100)}
+                    onChange={(e) => setVolume(Number(e.target.value) / 100)}
+                    onMouseEnter={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.2)'; h.style.opacity = '0.6' } }}
+                    onMouseLeave={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1)'; h.style.opacity = '1' } }}
+                    onMouseDown={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.5)'; h.style.opacity = '1' } }}
+                    onMouseUp={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.2)'; h.style.opacity = '0.6' } }}
+                    style={{ position: 'absolute', width: volH, height: 20, transform: 'rotate(-90deg)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', background: 'transparent', border: 'none', outline: 'none', opacity: 0, zIndex: 5 } as React.CSSProperties}
+                  />
+                </div>
+                <button onClick={nextTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s, opacity 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
+                  onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
+                  onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+                >
+                  <img src="/icon-next.svg" alt="next" style={{ width: btnSize, height: btnSize }} />
+                </button>
               </div>
-              <button onClick={nextTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s, opacity 0.15s' }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
-                onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
-                onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-              >
-                <img src="/icon-next.svg" alt="next" style={{ width: btnSize, height: btnSize }} />
-              </button>
-            </div>
+            )}
           </div>
         )
       })()}
