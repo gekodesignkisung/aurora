@@ -165,7 +165,10 @@ export default function MusicPanel({ open, onClose }: Props) {
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'opacity 0.15s' }}
               {...hov}
             >
-              <img src="/icon-close.svg" alt="close" style={{ width: 24, height: 24 }} />
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#999999" strokeWidth="2" strokeLinecap="round">
+                <line x1="7" y1="7" x2="17" y2="17"/>
+                <line x1="17" y1="7" x2="7" y2="17"/>
+              </svg>
             </button>
           </div>
 
