@@ -48,7 +48,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
     return () => {
       if (hideTimeoutRef.current) clearTimeout(hideTimeoutRef.current)
     }
-  }, [])
+  }, [resetHideTimer])
 
   const ensureAnalyzer = useCallback(() => {
     const audio = audioRef.current
@@ -173,7 +173,10 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
         zIndex: 0,
       }}
         onMouseMove={resetHideTimer}
-        onClick={resetHideTimer}
+        onClick={(e) => {
+          e.stopPropagation()
+          resetHideTimer()
+        }}
       />
 
       {/* ── Top right: Track info  +  Bottom: Mode buttons ── */}
