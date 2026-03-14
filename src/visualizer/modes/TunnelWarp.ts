@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { IVisualMode } from '@/types/visual'
 import type { AudioData } from '@/types/audio'
 
-const RING_COUNT  = 48
+const RING_COUNT  = 24
 const RING_SEGS   = 80
 const TUNNEL_LEN  = 500
 const CAMERA_Z    = 30
@@ -66,7 +66,7 @@ export class TunnelWarp implements IVisualMode {
 
       // Wave motion based on time and ring phase
       const waveFreq = 2 + mid * 1.5
-      const waveAmp = 3 + bass * 2
+      const waveAmp = 3 + bass * 3
       const wave1 = Math.sin(elapsed * waveFreq + ring.phase) * waveAmp
       const wave2 = Math.cos(elapsed * (waveFreq * 0.7) + ring.phase * 1.3) * waveAmp * 0.8
       ring.line.position.x = wave1

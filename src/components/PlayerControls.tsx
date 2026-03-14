@@ -253,28 +253,34 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           {track && (
             // Figma 1-20: 60×235 — thumbnail top, vertical text below
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flexShrink: 0, pointerEvents: 'auto' }}>
-              {/* Thumbnail — 60×60 */}
+              {/* Thumbnail — 48×48 */}
               {track.coverUrl ? (
-                <img src={track.coverUrl} alt="" style={{ width: 60, height: 60, borderRadius: 0, objectFit: 'cover' }} />
+                <img src={track.coverUrl} alt="" style={{ width: 48, height: 48, borderRadius: 0, objectFit: 'cover' }} />
               ) : (
-                <div style={{ width: 60, height: 60, background: 'white', borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <svg width="24" height="24" fill="rgba(0,0,0,0.2)" viewBox="0 0 24 24">
+                <div style={{ width: 48, height: 48, background: 'white', borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" fill="rgba(0,0,0,0.2)" viewBox="0 0 24 24">
                     <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
                   </svg>
                 </div>
               )}
-              {/* Vertical text — artist + album, flowing downward */}
+              {/* Vertical text — album only */}
               <div style={{ display: 'flex', gap: 2, maxHeight: isMobile ? 200 : 300, overflow: 'hidden' }}>
-                <p style={{ writingMode: 'vertical-rl', color: '#BBBBBB', fontWeight: 400, fontSize: isMobile ? 13 : 18, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.artist}</p>
-                <p style={{ writingMode: 'vertical-rl', color: '#ffffff', fontWeight: 400, fontSize: isMobile ? 14 : 20, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.album ?? track.name}</p>
+                <p style={{ writingMode: 'vertical-rl', color: '#ffffff', fontWeight: 400, fontSize: isMobile ? 14 : 18, opacity: 0.7, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{track.album ?? track.name}</p>
               </div>
             </div>
           )}
         </div>
 
+      {/* ── Bottom background ── */}
+      <div style={{
+        position: 'fixed', bottom: 0, left: 0, right: 0, height: 140,
+        background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.8))',
+        zIndex: 1, pointerEvents: 'none',
+      }} />
+
       {/* ── Bottom center: Mode buttons ── */}
       <div style={{
-          position: 'fixed', bottom: isMobile ? 22 : 60, left: 0, right: 0,
+          position: 'fixed', bottom: isMobile ? 22 : 40, left: 0, right: 0,
           display: 'flex', justifyContent: isMobile ? 'flex-start' : 'center',
           pointerEvents: 'none',
           paddingTop: 0,
@@ -291,7 +297,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
 
       {/* ── Ring — fixed at exact screen center ── */}
       <div style={{
-        position: 'fixed', top: `calc(50% - ${geo.SVG_SIZE / 2 - 30}px)`, left: '50%',
+        position: 'fixed', top: `calc(50% - ${geo.SVG_SIZE / 2 - 30}px${isMobile ? ' - 20px' : ''})`, left: '50%',
         transform: 'translate(-50%, -50%)',
         pointerEvents: 'auto',
       }}>
@@ -315,13 +321,13 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
             width: geo.btnSize, height: geo.btnSize, borderRadius: '50%',
             background: 'transparent', border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', padding: 0, transition: 'transform 0.15s, opacity 0.15s',
+            cursor: 'pointer', padding: 0, transition: 'transform 0.15s',
           }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)'; e.currentTarget.style.opacity = '1' }}
-            onMouseDown={(e) => { e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.5)'; e.currentTarget.style.opacity = '1' }}
-            onMouseUp={(e) => { e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-          >
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.2)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1)' }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.5)' }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'translate(-50%, -50%) scale(1.2)' }}
+            >
             {isPlaying
               ? <img src="/icon-pause.svg" alt="pause" style={{ width: geo.btnSize, height: geo.btnSize }} />
               : <img src="/icon-play.svg"  alt="play"  style={{ width: geo.btnSize, height: geo.btnSize }} />
@@ -347,7 +353,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
         return (
           <div style={{
             position: 'fixed',
-            top: `calc(50% + ${geo.SVG_SIZE / 2 - geo.btnSize / 2 - labelTopOffset - 55}px)`,
+            top: `calc(50% + ${geo.SVG_SIZE / 2 - geo.btnSize / 2 - labelTopOffset - 55}px${isMobile ? ' - 20px' : ''})`,
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: isMobile ? 20 : 32,
@@ -357,18 +363,23 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           }}>
             {(track || displayLabel) && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', maxWidth: isMobile ? 260 : 360 }}>
+                {!track && displayLabel && (
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? 14 : 16, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, textAlign: 'center', fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                    {displayLabel}
+                  </p>
+                )}
                 {track?.name && (
-                  <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: isMobile ? 16 : 18, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, textAlign: 'center', fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '4px' }}>
+                  <p style={{ color: 'rgba(255,255,255,1)', fontSize: isMobile ? 16 : 18, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, textAlign: 'center', fontWeight: 300, fontVariantNumeric: 'tabular-nums', letterSpacing: '4px' }}>
                     {(() => { const rem = Math.max(0, duration - currentTime); return `${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(Math.floor(rem % 60)).padStart(2, '0')}` })()}
                   </p>
                 )}
                 {track?.name && (
-                  <p style={{ color: '#ffffff', fontSize: isMobile ? 16 : 20, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, marginTop: 20, textAlign: 'center', fontWeight: 400, letterSpacing: '0.05em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                  <p style={{ color: '#ffffff', fontSize: isMobile ? 20 : 24, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, marginTop: 20, textAlign: 'center', fontWeight: 400, letterSpacing: '0.05em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
                     {track.name}
                   </p>
                 )}
                 {track?.artist && (
-                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? 14 : 16, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, marginTop: 4, textAlign: 'center', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: isMobile ? 15 : 17, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, marginTop: 4, textAlign: 'center', fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '100%' }}>
                     {track.artist}
                   </p>
                 )}
@@ -376,11 +387,11 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
             )}
             {(track || playingStreamLabel) && (
               <div style={{ display: 'flex', alignItems: 'center', gap: btnGap }}>
-                <button onClick={prevTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s, opacity 0.15s' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
-                  onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
-                  onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+                <button onClick={prevTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+                  onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)' }}
+                  onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
                 >
                   <img src="/icon-prev.svg" alt="prev" style={{ width: btnSize, height: btnSize }} />
                 </button>
@@ -388,21 +399,21 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
                 <div style={{ position: 'relative', width: 20, height: volH, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ position: 'absolute', width: 2, height: '100%', background: 'rgba(255,255,255,0.3)', borderRadius: 1 }} />
                   <div style={{ position: 'absolute', bottom: 0, width: 2, height: `${volume * 100}%`, background: '#ffffff', borderRadius: 1, transition: 'height 0.05s' }} />
-                  <div style={{ position: 'absolute', bottom: `${volume * 100}%`, transform: 'translateY(50%)', width: 20, height: 20, background: '#ffffff', borderRadius: '50%', pointerEvents: 'none', transition: 'transform 0.15s, opacity 0.15s' }} />
+                  <div style={{ position: 'absolute', bottom: `${volume * 100}%`, transform: 'translateY(50%)', width: 20, height: 20, background: '#ffffff', borderRadius: '50%', pointerEvents: 'none', transition: 'transform 0.15s' }} />
                   <input type="range" min={0} max={100} value={Math.round(volume * 100)}
                     onChange={(e) => setVolume(Number(e.target.value) / 100)}
-                    onMouseEnter={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.2)'; h.style.opacity = '0.6' } }}
-                    onMouseLeave={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1)'; h.style.opacity = '1' } }}
-                    onMouseDown={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.5)'; h.style.opacity = '1' } }}
-                    onMouseUp={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) { h.style.transform = 'translateY(50%) scale(1.2)'; h.style.opacity = '0.6' } }}
+                    onMouseEnter={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) h.style.transform = 'translateY(50%) scale(1.2)' }}
+                    onMouseLeave={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) h.style.transform = 'translateY(50%) scale(1)' }}
+                    onMouseDown={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) h.style.transform = 'translateY(50%) scale(1.5)' }}
+                    onMouseUp={(e) => { const h = e.currentTarget.previousElementSibling as HTMLElement; if (h) h.style.transform = 'translateY(50%) scale(1.2)' }}
                     style={{ position: 'absolute', width: volH, height: 20, transform: 'rotate(-90deg)', cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none', background: 'transparent', border: 'none', outline: 'none', opacity: 0, zIndex: 5 } as React.CSSProperties}
                   />
                 </div>
-                <button onClick={nextTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s, opacity 0.15s' }}
-                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
-                  onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
-                  onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+                <button onClick={nextTrack} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s' }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+                  onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)' }}
+                  onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
                 >
                   <img src="/icon-next.svg" alt="next" style={{ width: btnSize, height: btnSize }} />
                 </button>

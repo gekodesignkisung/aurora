@@ -98,7 +98,7 @@ export class LiquidMercury implements IVisualMode {
     this.scene = scene
 
     const res = window.innerWidth < 768 ? 80 : 140
-    const geo = new THREE.PlaneGeometry(160, 160, res, res)
+    const geo = new THREE.PlaneGeometry(200, 200, res, res)
     geo.rotateX(-Math.PI / 2)   // fully flat — optimal for top-down view
 
     this.uniforms = {
@@ -155,7 +155,11 @@ export class LiquidMercury implements IVisualMode {
         height,
         Math.cos(elapsed * 0.05) * 4 + 36,
       )
-      this.camera.lookAt(0, -6, 0)
+      this.camera.lookAt(
+        Math.sin(elapsed * 0.11) * 12,
+        -6 + Math.sin(elapsed * 0.09) * 3,
+        Math.cos(elapsed * 0.13) * 10,
+      )
     }
   }
 

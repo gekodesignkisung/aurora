@@ -2,8 +2,8 @@ import * as THREE from 'three'
 import type { IVisualMode } from '@/types/visual'
 import type { AudioData } from '@/types/audio'
 
-const COLS = 32
-const ROWS = 80
+const COLS = 72
+const ROWS = 120
 const W = 28
 const H = 50
 
@@ -96,9 +96,10 @@ export class FreqTerrain implements IVisualMode {
     this.geo.attributes.position.needsUpdate = true
     this.geo.attributes.color.needsUpdate    = true
 
-    // Gentle sway
+    // Diagonal perspective tilt + gentle sway
+    this.group.rotation.x = -0.55 + mid * 0.04
     this.group.rotation.y = Math.sin(elapsed * 0.12) * 0.25
-    this.group.rotation.x = mid * 0.04
+    this.group.rotation.z = Math.PI / 6
   }
 
   dispose(): void {

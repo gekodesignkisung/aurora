@@ -6,8 +6,10 @@ const FFT_SIZE = 4096
 export class AudioAnalyzer {
   private context: AudioContext | null = null
   private analyser: AnalyserNode | null = null
+  private beatAnalyser: AnalyserNode | null = null   // zero-smoothing for tight beat detection
   private source: MediaElementAudioSourceNode | null = null
   private frequencies: Uint8Array<ArrayBuffer> = new Uint8Array(FFT_SIZE / 2)
+  private beatFrequencies: Uint8Array<ArrayBuffer> = new Uint8Array(FFT_SIZE / 2)
   private waveform: Uint8Array<ArrayBuffer> = new Uint8Array(FFT_SIZE / 2)
   private connected = false
   private detector = new BeatDetector()
@@ -17,16 +19,25 @@ export class AudioAnalyzer {
     if (!this.context) {
       this.context = new AudioContext()
     }
+
+    // Visual analyser — smoothed for stable frequency display
     this.analyser = this.context.createAnalyser()
     this.analyser.fftSize = FFT_SIZE
-    this.analyser.smoothingTimeConstant = 0.8
+    this.analyser.smoothingTimeConstant = 0.75
+
+    // Beat analyser — no smoothing, catches transients immediately
+    this.beatAnalyser = this.context.createAnalyser()
+    this.beatAnalyser.fftSize = FFT_SIZE
+    this.beatAnalyser.smoothingTimeConstant = 0.0
 
     this.source = this.context.createMediaElementSource(audio)
     this.source.connect(this.analyser)
+    this.source.connect(this.beatAnalyser)
     this.analyser.connect(this.context.destination)
 
-    this.frequencies = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
-    this.waveform = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
+    this.frequencies     = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
+    this.beatFrequencies = new Uint8Array(this.beatAnalyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
+    this.waveform        = new Uint8Array(this.analyser.frequencyBinCount) as Uint8Array<ArrayBuffer>
     this.connected = true
   }
 
@@ -45,6 +56,7 @@ export class AudioAnalyzer {
 
     this.analyser.getByteFrequencyData(this.frequencies)
     this.analyser.getByteTimeDomainData(this.waveform)
+    this.beatAnalyser!.getByteFrequencyData(this.beatFrequencies)
 
     const sampleRate = this.context.sampleRate
     const binSize = sampleRate / FFT_SIZE
@@ -55,9 +67,12 @@ export class AudioAnalyzer {
     const midEnd    = Math.floor(2000 / binSize)
     const trebStart = Math.floor(4000 / binSize)
 
-    const bass   = this.bandAvg(0, bassEnd) / 255
-    const mid    = this.bandAvg(midStart, midEnd) / 255
-    const treble = this.bandAvg(trebStart, bins - 1) / 255
+    const bass   = this.bandAvg(this.frequencies, 0, bassEnd) / 255
+    const mid    = this.bandAvg(this.frequencies, midStart, midEnd) / 255
+    const treble = this.bandAvg(this.frequencies, trebStart, bins - 1) / 255
+
+    // Beat bass from zero-smoothing analyser — raw transient
+    const beatBass = this.bandAvg(this.beatFrequencies, 0, bassEnd) / 255
 
     // RMS volume
     let rms = 0
@@ -70,22 +85,23 @@ export class AudioAnalyzer {
     // Spectral centroid
     const spectralCentroid = this.computeCentroid(bins)
 
-    const { beat, bpm } = this.detector.detect(bass, volume)
+    const { beat, bpm } = this.detector.detect(beatBass, volume)
 
     return { bass, mid, treble, volume, beat, bpm, spectralCentroid, frequencies: this.frequencies, waveform: this.waveform }
   }
 
   dispose() {
     this.analyser?.disconnect()
+    this.beatAnalyser?.disconnect()
     this.source?.disconnect()
     this.context?.close()
     this.connected = false
   }
 
-  private bandAvg(start: number, end: number): number {
+  private bandAvg(buf: Uint8Array, start: number, end: number): number {
     if (start >= end) return 0
     let sum = 0
-    for (let i = start; i <= end; i++) sum += this.frequencies[i]
+    for (let i = start; i <= end; i++) sum += buf[i]
     return sum / (end - start + 1)
   }
 

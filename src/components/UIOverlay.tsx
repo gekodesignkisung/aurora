@@ -42,6 +42,13 @@ export default function UIOverlay({ audioRef, analyzerRef }: Props) {
       </button>
       <PlayerControls audioRef={audioRef} analyzerRef={analyzerRef} />
       <MusicPanel open={musicPanelOpen} onClose={() => setMusicPanelOpen(false)} />
+      <div style={{
+        position: 'fixed', bottom: 16, right: 20, zIndex: 10,
+        color: '#fff', opacity: 0.2, fontSize: 12,
+        fontFamily: 'inherit', pointerEvents: 'none', userSelect: 'none',
+      }}>
+        ©2026 Prototype created by Gekodesign
+      </div>
     </>
   )
 }

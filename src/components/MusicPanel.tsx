@@ -24,7 +24,7 @@ const S = {
   tagFontSize:        14,
   tagFontWeight:      600,
   trackTitleSize:     16,
-  trackTitleWeight:   600,
+  trackTitleWeight:   400,
   trackArtistSize:    14,
   trackArtistWeight:  500,
   trackGap:           30,
@@ -102,10 +102,14 @@ export default function MusicPanel({ open, onClose }: Props) {
   }
 
   const panelW: number | string = isMobile ? '100%' : 380
-  const canPlay = (tab === 'genre' && !!selectedGenre) || (tab === 'theme' && !!selectedTheme)
+  const canPlay = (tab === 'genre' && !!selectedGenre) || (tab === 'theme' && !!selectedTheme) || (tab === 'local' && playlist.length > 0)
   const handlePlay = () => {
     if (tab === 'genre' && selectedGenre) { startGenreStream(selectedGenre); onClose() }
     if (tab === 'theme' && selectedTheme) { startThemeStream(selectedTheme); onClose() }
+    if (tab === 'local' && playlist.length > 0) {
+      const target = currentTrack && playlist.find(t => t.id === currentTrack.id) ? currentTrack : playlist[0]
+      setTrack(target); setIsPlaying(true); onClose()
+    }
   }
 
   return (
@@ -125,8 +129,7 @@ export default function MusicPanel({ open, onClose }: Props) {
       {/* Panel — slides from left */}
       <div style={{
         position: 'fixed', left: 0, top: 0, bottom: 0, width: panelW,
-        background: 'rgba(0, 0, 0, 0.7)',
-        backdropFilter: 'blur(10px)',
+        background: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.60) 70%, rgba(0,0,0,0) 100%)',
         zIndex: 40, display: 'flex', flexDirection: 'column',
         transform: open ? 'translateX(0)' : 'translateX(-100%)',
         transition: 'transform 0.3s ease',
@@ -162,10 +165,13 @@ export default function MusicPanel({ open, onClose }: Props) {
             {/* Close button */}
             <button
               onClick={onClose}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'opacity 0.15s' }}
-              {...hov}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, transition: 'transform 0.15s', marginBottom: 8 }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+              onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)' }}
+              onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
             >
-              <img src="/icon-close.svg" alt="close" style={{ width: 24, height: 24 }} />
+              <img src="/icon-close.svg" alt="close" style={{ width: 24, height: 24, filter: 'brightness(0) invert(1)' }} />
             </button>
           </div>
 
@@ -262,7 +268,7 @@ export default function MusicPanel({ open, onClose }: Props) {
           )}
 
           {/* Play button */}
-          {(tab === 'genre' || tab === 'theme') && (
+          {(tab === 'genre' || tab === 'theme' || tab === 'local') && (
             <button
               onClick={handlePlay}
               disabled={!canPlay || isLoadingJamendo}
@@ -275,14 +281,17 @@ export default function MusicPanel({ open, onClose }: Props) {
                 opacity: !canPlay || isLoadingJamendo ? 0.3 : (isPlaying ? 0.5 : 1),
                 transition: 'transform 0.15s, opacity 0.15s',
               }}
-              onMouseEnter={(e) => { if (canPlay && !isLoadingJamendo) e.currentTarget.style.opacity = isPlaying ? '0.8' : '0.6' }}
-            onMouseLeave={(e) => { if (canPlay && !isLoadingJamendo) e.currentTarget.style.opacity = isPlaying ? '0.5' : '1' }}
-            onMouseDown={(e) => { if (canPlay && !isLoadingJamendo) e.currentTarget.style.opacity = '1' }}
-            onMouseUp={(e) => { if (canPlay && !isLoadingJamendo) e.currentTarget.style.opacity = isPlaying ? '0.8' : '0.6' }}
+              onMouseEnter={(e) => { if (canPlay && !isLoadingJamendo) e.currentTarget.style.transform = 'scale(1.03)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(0.97)' }}
+            onMouseUp={(e) => { if (canPlay && !isLoadingJamendo) e.currentTarget.style.transform = 'scale(1.03)' }}
             >
               {isLoadingJamendo
                 ? <span style={{ color: S.colorText, fontSize: 13, fontFamily: S.font }}>Loading…</span>
-                : <img src="/icon-play-list.svg" alt="play" style={{ width: 30, height: 30 }} />
+                : <>
+                    <img src="/icon-play-list.svg" alt="play" style={{ width: 30, height: 30 }} />
+                    <span style={{ color: S.colorText, fontSize: 14, fontFamily: S.font, letterSpacing: '0.08em' }}>Playlist</span>
+                  </>
               }
             </button>
           )}

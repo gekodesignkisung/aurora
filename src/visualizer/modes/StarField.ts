@@ -2,55 +2,52 @@ import * as THREE from 'three'
 import type { IVisualMode } from '@/types/visual'
 import type { AudioData } from '@/types/audio'
 
-const COUNT = 5000
-const RING_RES = 80
-const MAX_RINGS = 12
-
-function hsl2rgb(h: number, s: number, l: number): [number, number, number] {
-  const a = s * Math.min(l, 1 - l)
-  const f = (n: number) => { const k = (n + h * 12) % 12; return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)) }
-  return [f(0), f(8), f(4)]
-}
-
-interface Ring {
-  mesh: THREE.Line
-  mat: THREE.LineBasicMaterial
-  life: number   // 1 → 0
-  hue: number
-  zPos: number
-}
+const COUNT = 2000
 
 export class StarField implements IVisualMode {
   private geo: THREE.BufferGeometry
   private points: THREE.Points
   private positions: Float32Array
+  private baseX: Float32Array   // base XY — shimmer applied as pure offset
+  private baseY: Float32Array
+  private colors: Float32Array
   private material: THREE.PointsMaterial
 
-  private rings: Ring[] = []
-  private ringHue = 0
+  private hue = 0
+  private flash = 0
+  private boost = 0
 
-  private beatFlash = 0
+  private camera: THREE.PerspectiveCamera | null = null
+  private rollVel = 0
+  private rollDir = 1
+  private _col = new THREE.Color()
 
   constructor(scene: THREE.Scene) {
     this.geo = new THREE.BufferGeometry()
     this.positions = new Float32Array(COUNT * 3)
+    this.baseX     = new Float32Array(COUNT)
+    this.baseY     = new Float32Array(COUNT)
+    this.colors    = new Float32Array(COUNT * 3)
 
     for (let i = 0; i < COUNT; i++) {
-      // Circular distribution using polar coordinates
-      const angle = Math.random() * Math.PI * 2
-      const radius = Math.sqrt(Math.random()) * 30  // sqrt for uniform distribution
-      this.positions[i*3]   = Math.cos(angle) * radius
-      this.positions[i*3+1] = Math.sin(angle) * radius
-      this.positions[i*3+2] = (Math.random() - 0.5) * 500 - 50
+      const x = (Math.random() - 0.5) * 60
+      const y = (Math.random() - 0.5) * 60
+      this.baseX[i] = x
+      this.baseY[i] = y
+      this.positions[i*3]   = x
+      this.positions[i*3+1] = y
+      this.positions[i*3+2] = (Math.random() - 0.5) * 800
+      this.colors[i*3] = this.colors[i*3+1] = this.colors[i*3+2] = 1
     }
 
-    this.geo.setAttribute('position', new THREE.BufferAttribute(this.positions, 3))
+    this.geo.setAttribute('position', new THREE.BufferAttribute(this.positions, 3).setUsage(THREE.DynamicDrawUsage))
+    this.geo.setAttribute('color',    new THREE.BufferAttribute(this.colors, 3).setUsage(THREE.DynamicDrawUsage))
 
     this.material = new THREE.PointsMaterial({
-      size: 0.15,
-      color: 0xffffff,
+      size: 0.2,
+      vertexColors: true,
       transparent: true,
-      opacity: 0.85,
+      opacity: 0.9,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
       sizeAttenuation: true,
@@ -58,102 +55,74 @@ export class StarField implements IVisualMode {
 
     this.points = new THREE.Points(this.geo, this.material)
     scene.add(this.points)
-
-    // Pre-build ring pool (unit circle in XY, scale drives apparent size)
-    const ringPts = new Float32Array((RING_RES + 1) * 3)
-    for (let j = 0; j <= RING_RES; j++) {
-      const a = (j / RING_RES) * Math.PI * 2
-      ringPts[j*3]   = Math.cos(a)
-      ringPts[j*3+1] = Math.sin(a)
-      ringPts[j*3+2] = 0
-    }
-
-    for (let k = 0; k < MAX_RINGS; k++) {
-      const rGeo = new THREE.BufferGeometry()
-      rGeo.setAttribute('position', new THREE.BufferAttribute(ringPts.slice(), 3))
-      const mat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 })
-      const mesh = new THREE.Line(rGeo, mat)
-      mesh.visible = false
-      scene.add(mesh)
-      this.rings.push({ mesh, mat, life: 0, hue: 0, zPos: 0 })
-    }
   }
 
-  private spawnRing(bass: number) {
-    const ring = this.rings.find(r => r.life <= 0)
-    if (!ring) return
-    ring.life = 1.0
-    ring.hue = this.ringHue
-    ring.zPos = -5 - bass * 10    // spawn slightly in front
-    this.ringHue = (this.ringHue + 0.15) % 1
-    ring.mesh.scale.set(1, 1, 1)
-    ring.mesh.position.z = ring.zPos
-    ring.mesh.visible = true
+  onModeEnter(camera?: THREE.PerspectiveCamera) {
+    if (camera) { this.camera = camera; camera.rotation.z = 0 }
+  }
+
+  onModeExit(camera?: THREE.PerspectiveCamera) {
+    if (camera) camera.rotation.z = 0
+    this.camera = null
   }
 
   update(audio: AudioData, delta: number, elapsed: number) {
-    const { bass, mid, treble, volume, beat, spectralCentroid } = audio
-    const speed = 15 + bass * 280 + this.beatFlash * 120
+    const { bass, treble, volume, beat } = audio
 
     if (beat) {
-      this.beatFlash = 1.0
-      this.spawnRing(bass)
-      this.spawnRing(bass)
-    } else {
-      this.beatFlash = Math.max(0, this.beatFlash - delta * 3)
+      this.flash = 1.0
+      this.boost = 1.0
+      this.rollVel += this.rollDir * (0.25 + bass * 0.4)
+      this.rollDir *= -1
+    }
+    this.flash = Math.max(0, this.flash - delta * 6)
+    this.boost = Math.max(0, this.boost - delta * 3)
+
+    if (this.camera) {
+      this.rollVel *= Math.pow(0.04, delta)
+      this.rollVel -= this.camera.rotation.z * 8 * delta
+      this.camera.rotation.z += this.rollVel * delta
     }
 
-    // Move stars toward camera
+    this.hue = (this.hue + delta * 0.06 + (beat ? 0.08 : 0)) % 1
+    this._col.setHSL(this.hue, 1.0, 0.5 + this.flash * 0.5)
+    const col = this._col
+
+    const speed = 15 + volume * 60 + this.boost * 120
+    const shimmer = treble * 1.5
+
     for (let i = 0; i < COUNT; i++) {
-      this.positions[i*3+2] += speed * delta
+      this.positions[i*3+2] -= speed * delta
 
-      if (this.positions[i*3+2] > 30) {
-        // Reset with circular distribution
-        const angle = Math.random() * Math.PI * 2
-        const radius = Math.sqrt(Math.random()) * 30
-        this.positions[i*3]   = Math.cos(angle) * radius
-        this.positions[i*3+1] = Math.sin(angle) * radius
-        this.positions[i*3+2] = -500
+      if (this.positions[i*3+2] < -400) {
+        const x = (Math.random() - 0.5) * 60
+        const y = (Math.random() - 0.5) * 60
+        this.baseX[i] = x
+        this.baseY[i] = y
+        this.positions[i*3+2] = 30
       }
 
-      // Treble drift + mid sway
-      this.positions[i*3]   += Math.sin(i * 0.1 + elapsed * 0.5) * (treble * 6 + mid * 2) * delta
-      this.positions[i*3+1] += Math.cos(i * 0.13 + elapsed * 0.4) * (treble * 6 + mid * 2) * delta
+      // Shimmer as pure offset from base — never drifts
+      const sx = Math.sin(i * 0.07 + elapsed * 2.1) * shimmer
+      const sy = Math.cos(i * 0.09 + elapsed * 1.9) * shimmer
+      this.positions[i*3]   = this.baseX[i] + sx
+      this.positions[i*3+1] = this.baseY[i] + sy
 
-      // Beat scatter
-      if (beat && i < 2000) {
-        this.positions[i*3]   += (Math.random() - 0.5) * (6 + bass * 8)
-        this.positions[i*3+1] += (Math.random() - 0.5) * (6 + bass * 8)
-      }
+      this.colors[i*3]   = col.r
+      this.colors[i*3+1] = col.g
+      this.colors[i*3+2] = col.b
     }
+
     this.geo.attributes.position.needsUpdate = true
+    this.geo.attributes.color.needsUpdate    = true
 
-    const h = 0.6 - spectralCentroid * 0.5
-    this.material.color.setHSL(h, 0.8 + mid * 0.2, 0.6 + this.beatFlash * 0.4)
-    this.material.size    = 0.1 + bass * 0.55 + this.beatFlash * 0.5
-    this.material.opacity = 0.55 + volume * 0.4 + this.beatFlash * 0.05
-
-    // Update rings
-    for (const ring of this.rings) {
-      if (ring.life <= 0) continue
-      ring.life = Math.max(0, ring.life - delta * 0.7)
-      const radius = 0.5 + (1 - ring.life) * 110
-      ring.mesh.scale.set(radius, radius, 1)
-      ring.mat.opacity = ring.life * 1.2
-      const [r, g, b] = hsl2rgb(ring.hue, 1.0, 0.75 + bass * 0.2)
-      ring.mat.color.setRGB(r, g, b)
-      if (ring.life <= 0) ring.mesh.visible = false
-    }
+    this.material.size    = 0.15 + bass * 1.2 + this.flash * 0.8
+    this.material.opacity = 0.6 + volume * 0.4
   }
 
   dispose() {
     this.geo.dispose()
     this.material.dispose()
     this.points.removeFromParent()
-    for (const r of this.rings) {
-      r.mesh.geometry.dispose()
-      r.mat.dispose()
-      r.mesh.removeFromParent()
-    }
   }
 }

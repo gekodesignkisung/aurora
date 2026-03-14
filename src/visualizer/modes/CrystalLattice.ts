@@ -2,7 +2,7 @@ import * as THREE from 'three'
 import type { IVisualMode } from '@/types/visual'
 import type { AudioData } from '@/types/audio'
 
-const GRID = 8
+const GRID = 6
 const SPACING = 5
 const COUNT = GRID * GRID * GRID
 

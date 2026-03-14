@@ -7,7 +7,7 @@ import { createMode } from './modeRegistry'
 const BG_CONFIG: Record<VisualMode, { pattern: number; dim: number; hue: number; hueSpeed: number }> = {
   'nebula-cloud':    { pattern: 0, dim: 0.50, hue: 0.82, hueSpeed: 0.04 }, // radial pulse, blue-purple nebula
   'star-field':      { pattern: 3, dim: 0.06, hue: 0.64, hueSpeed: 0.005 }, // diamond, near-black deep space
-  'crystal-lattice': { pattern: 1, dim: 0.40, hue: 0.82, hueSpeed: 0.05 }, // spiral, magenta gem vault
+  'crystal-lattice': { pattern: 6, dim: 0.40, hue: 0.82, hueSpeed: 0.05 }, // interference, magenta gem vault
   'freq-terrain':    { pattern: 2, dim: 0.22, hue: 0.38, hueSpeed: 0.02 }, // grid, dark green matrix
   'morph-blob':      { pattern: 10, dim: 0.38, hue: 0.02, hueSpeed: 0.06 }, // diagonal waves, warm red-orange
   'tunnel-warp':     { pattern: 4, dim: 0.28, hue: 0.55, hueSpeed: 0.008 }, // diamond, tunnel
@@ -101,9 +101,19 @@ export class Renderer {
                             - smoothstep(0.02, 0.08 + uMid * 0.1, abs(g.y)), 0.0, 1.0);
           } else if (p < 4.0) {
             val = sin((uv.x - uv.y) * 10.0 + t * 2.0 + uBass * 8.0) * 0.5 + 0.5;
-          } else {
+          } else if (p < 5.0) {
             float d = max(abs(uv.x), abs(uv.y));
             val = sin(d * 18.0 - t * 2.5 + uBass * 5.0) * 0.5 + 0.5;
+          } else if (p < 7.0) {
+            float d1 = length(uv + vec2(0.22, 0.12));
+            float d2 = length(uv - vec2(0.22, 0.12));
+            float w1 = sin(d1 * 16.0 - t * 2.0 + uBass * 5.0);
+            float w2 = sin(d2 * 16.0 - t * 1.6 + uMid * 4.0);
+            val = (w1 + w2) * 0.25 + 0.5;
+          } else {
+            float d = length(uv);
+            float a = atan(uv.y, uv.x);
+            val = sin(d * 14.0 + a * 2.0 - t * 2.5 + uBass * 5.0) * 0.5 + 0.5;
           }
 
           float hue   = mod(uHue + val * 0.25 + uTreble * 0.15, 1.0);

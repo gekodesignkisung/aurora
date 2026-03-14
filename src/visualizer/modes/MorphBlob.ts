@@ -4,7 +4,7 @@ import type { AudioData } from '@/types/audio'
 
 const THETA_SEGS = 64
 const PHI_SEGS   = 32
-const BASE_R     = 8
+const BASE_R     = 10
 
 function hsl2rgb(h: number, s: number, l: number): [number, number, number] {
   const a = s * Math.min(l, 1 - l)
@@ -50,8 +50,8 @@ export class MorphBlob implements IVisualMode {
 
     this.mesh = new THREE.Mesh(this.geo, new THREE.MeshPhongMaterial({
       vertexColors: true,
-      shininess: 140,
-      emissive: new THREE.Color(0.05, 0.05, 0.05),
+      shininess: 260,
+      emissive: new THREE.Color(0.01, 0.01, 0.01),
     }))
     scene.add(this.mesh)
 
@@ -79,16 +79,17 @@ export class MorphBlob implements IVisualMode {
       const binIdx = freqLen > 0 ? Math.floor(normTheta * Math.min(freqLen-1, 255)) : 0
       const amp = freqLen > 0 ? frequencies[binIdx] / 255 : 0
 
-      // Mid-driven sine wave across latitude
-      const midWave = Math.sin(ny * 3 + elapsed * 2.5 + normTheta * 6) * mid * 2.5
-      const displacement = BASE_R + amp * 4.5 * (1 + bass * 0.6) + midWave + this.beatFlash * 2
+      // Circular ring pattern: concentric waves from pole
+      const phi = Math.acos(Math.max(-1, Math.min(1, ny)))
+      const circularWave = Math.sin(phi * 6 + elapsed * 2.5) * mid * 2.5
+      const displacement = BASE_R + amp * 4.5 * (1 + bass * 0.6) + circularWave + this.beatFlash * 2
 
       this.positions[i*3]   = nx * displacement
       this.positions[i*3+1] = ny * displacement
       this.positions[i*3+2] = nz * displacement
 
       const h = (this.hue + normTheta * 0.5 + amp * 0.25) % 1
-      const l = 0.3 + amp * 0.5 + this.beatFlash * 0.2
+      const l = 0.1 + amp * 0.75 + this.beatFlash * 0.2
       const [r, g, b] = hsl2rgb(h, 1.0, l)
       this.colors[i*3] = r; this.colors[i*3+1] = g; this.colors[i*3+2] = b
     }
@@ -99,6 +100,8 @@ export class MorphBlob implements IVisualMode {
 
     this.mesh.rotation.y += delta * (0.25 + mid * 0.5)
     this.mesh.rotation.z =  Math.sin(elapsed * 0.18) * 0.3
+    this.mesh.position.x = Math.cos(elapsed * 0.25) * 3
+    this.mesh.position.z = Math.sin(elapsed * 0.25) * 3
 
     // Orbiting light
     this.light.position.set(
@@ -108,7 +111,7 @@ export class MorphBlob implements IVisualMode {
     )
     const lh = (this.hue + 0.5) % 1
     this.light.color.setHSL(lh, 1.0, 0.7)
-    this.light.intensity = 4 + bass * 10 + this.beatFlash * 6
+    this.light.intensity = 2 + bass * 18 + this.beatFlash * 10
   }
 
   dispose(): void {
