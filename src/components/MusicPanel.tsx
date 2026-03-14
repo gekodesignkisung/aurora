@@ -51,6 +51,13 @@ export default function MusicPanel({ open, onClose }: Props) {
     setCurrentPanelTab(tab)
   }, [tab, setCurrentPanelTab])
 
+  // Auto-select first theme when switching to theme tab with no selection
+  useEffect(() => {
+    if (tab === 'theme' && !selectedTheme) {
+      setSelectedTheme(THEMES[0].id as ThemeId)
+    }
+  }, [tab, selectedTheme, setSelectedTheme])
+
   // Load playlist when panel opens or genre/theme changes
   useEffect(() => {
     if (open && tab === 'genre' && selectedGenre) {
