@@ -9,6 +9,7 @@ export type VisualMode =
   | 'morph-blob'
   | 'tunnel-warp'
   | 'liquid-mercury'
+  | 'zombie-dance'
 
 export interface IVisualMode {
   update(audio: AudioData, delta: number, elapsed: number): void

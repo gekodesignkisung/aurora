@@ -11,6 +11,7 @@ const MODES: { id: VisualMode; label: string; key: string }[] = [
   { id: 'morph-blob',     label: 'Morph Blob', key: '5' },
   { id: 'tunnel-warp',    label: 'Tunnel Warp', key: '6' },
   { id: 'liquid-mercury',       label: 'Liquid Mercury', key: '7' },
+  { id: 'zombie-dance',      label: 'Zombie Dance', key: '8' },
 ]
 
 export default function ModeSelector() {

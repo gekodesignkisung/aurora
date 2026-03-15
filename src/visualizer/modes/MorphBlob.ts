@@ -18,7 +18,6 @@ export class MorphBlob implements IVisualMode {
   private positions: Float32Array
   private colors: Float32Array
   private mesh: THREE.Mesh
-  private light: THREE.PointLight
   private scene: THREE.Scene
   private hue = 0
   private beatFlash = 0
@@ -48,16 +47,11 @@ export class MorphBlob implements IVisualMode {
     this.geo.setAttribute('position', new THREE.BufferAttribute(this.positions, 3).setUsage(THREE.DynamicDrawUsage))
     this.geo.setAttribute('color',    new THREE.BufferAttribute(this.colors,    3).setUsage(THREE.DynamicDrawUsage))
 
-    this.mesh = new THREE.Mesh(this.geo, new THREE.MeshPhongMaterial({
+    this.mesh = new THREE.Mesh(this.geo, new THREE.MeshBasicMaterial({
       vertexColors: true,
-      shininess: 260,
-      emissive: new THREE.Color(0.01, 0.01, 0.01),
+      wireframe: true,
     }))
     scene.add(this.mesh)
-
-    // Dedicated point light that orbits the blob
-    this.light = new THREE.PointLight(0xffffff, 6, 60)
-    scene.add(this.light)
   }
 
   update(audio: AudioData, delta: number, elapsed: number): void {
@@ -103,21 +97,11 @@ export class MorphBlob implements IVisualMode {
     this.mesh.position.x = Math.cos(elapsed * 0.25) * 3
     this.mesh.position.z = Math.sin(elapsed * 0.25) * 3
 
-    // Orbiting light
-    this.light.position.set(
-      Math.cos(elapsed * 0.7) * 18,
-      Math.sin(elapsed * 0.45) * 12,
-      Math.sin(elapsed * 0.7) * 18,
-    )
-    const lh = (this.hue + 0.5) % 1
-    this.light.color.setHSL(lh, 1.0, 0.7)
-    this.light.intensity = 2 + bass * 18 + this.beatFlash * 10
   }
 
   dispose(): void {
     this.geo.dispose()
     ;(this.mesh.material as THREE.Material).dispose()
     this.scene.remove(this.mesh)
-    this.scene.remove(this.light)
   }
 }

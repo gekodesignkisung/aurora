@@ -41,10 +41,11 @@ export class AudioAnalyzer {
     this.connected = true
   }
 
-  resume() {
+  resume(): Promise<void> {
     if (this.context?.state === 'suspended') {
-      this.context.resume()
+      return this.context.resume()
     }
+    return Promise.resolve()
   }
 
   isConnected() { return this.connected }

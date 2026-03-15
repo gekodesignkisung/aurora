@@ -22,24 +22,28 @@ export default function UIOverlay({ audioRef, analyzerRef }: Props) {
   return (
     <>
       <DropZone />
-      {/* Panel toggle button — top left */}
-      <button
-        onClick={() => setMusicPanelOpen(!musicPanelOpen)}
-        style={{
-          position: 'fixed', top: buttonPosition, left: buttonPosition, zIndex: 20,
-          width: buttonSize, height: buttonSize, borderRadius: '50%',
-          background: 'none', border: 'none',
-          cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: 'white', pointerEvents: 'auto', padding: 0,
-          transition: 'transform 0.15s, opacity 0.15s',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-        onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
-        onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
-        onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-      >
-        <img src="/icon-menu.svg" alt="menu" style={{ width: buttonSize, height: buttonSize }} />
-      </button>
+      {/* Panel toggle button — top right */}
+      <div style={{
+        position: 'fixed', top: buttonPosition, right: buttonPosition, zIndex: 20,
+        opacity: musicPanelOpen ? 0 : 1, pointerEvents: musicPanelOpen ? 'none' : 'auto',
+        transition: 'opacity 0.3s ease',
+      }}>
+        <button
+          onClick={() => setMusicPanelOpen(true)}
+          style={{
+            width: buttonSize, height: buttonSize, borderRadius: '50%',
+            background: 'none', border: 'none',
+            cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', padding: 0, transition: 'transform 0.15s, opacity 0.15s',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
+          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
+          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+        >
+          <img src="/icon-menu.svg" alt="menu" style={{ width: buttonSize, height: buttonSize }} />
+        </button>
+      </div>
       <PlayerControls audioRef={audioRef} analyzerRef={analyzerRef} />
       <MusicPanel open={musicPanelOpen} onClose={() => setMusicPanelOpen(false)} />
       <div style={{

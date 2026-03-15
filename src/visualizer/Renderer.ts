@@ -12,6 +12,7 @@ const BG_CONFIG: Record<VisualMode, { pattern: number; dim: number; hue: number;
   'morph-blob':      { pattern: 10, dim: 0.38, hue: 0.02, hueSpeed: 0.06 }, // diagonal waves, warm red-orange
   'tunnel-warp':     { pattern: 4, dim: 0.28, hue: 0.55, hueSpeed: 0.008 }, // diamond, tunnel
   'liquid-mercury':       { pattern: 3, dim: 0.08, hue: 0.60, hueSpeed: 0.003 }, // diamond, near-black
+  'zombie-dance':      { pattern: 8, dim: 0.30, hue: 0.6,  hueSpeed: 0.07  }, // plasma lattice, blue-violet
 }
 
 export class Renderer {
@@ -110,6 +111,14 @@ export class Renderer {
             float w1 = sin(d1 * 16.0 - t * 2.0 + uBass * 5.0);
             float w2 = sin(d2 * 16.0 - t * 1.6 + uMid * 4.0);
             val = (w1 + w2) * 0.25 + 0.5;
+          } else if (p < 9.0) {
+            // plasma: overlapping sine lattice (zombie dance exclusive)
+            float px = uv.x * 9.0 + t * 1.1 + uBass * 3.0;
+            float py = uv.y * 9.0 + t * 0.7 + uMid * 2.0;
+            val = sin(px) * sin(py) * 0.25
+                + sin((px + py) * 0.8 + t * 1.3) * 0.25
+                + sin(dist * 11.0 - t * 2.0 + uBass * 4.0) * 0.25
+                + 0.25;
           } else {
             float d = length(uv);
             float a = atan(uv.y, uv.x);
@@ -216,12 +225,13 @@ export class Renderer {
     u.uMid.value    = audio.mid
     u.uTreble.value = audio.treble
 
-    if (!this.isOrtho) {
+    this.currentMode?.update(audio, delta, this.clock.elapsed)
+
+    // Default camera drift — only when mode doesn't control camera itself
+    if (!this.isOrtho && this.activeVisualMode !== 'zombie-dance') {
       this.camera.position.x = Math.sin(this.clock.elapsed * 0.1) * 3
       this.camera.position.y = Math.cos(this.clock.elapsed * 0.08) * 2
     }
-
-    this.currentMode?.update(audio, delta, this.clock.elapsed)
 
     const cam = this.isOrtho ? this.orthoCamera : this.camera
 

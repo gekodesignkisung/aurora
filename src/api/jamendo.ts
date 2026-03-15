@@ -33,13 +33,25 @@ function decodeHtml(str: string): string {
   return str.replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#039;/g, "'")
 }
 
+/**
+ * Route Jamendo storage audio URLs through our own Edge Function proxy.
+ * This avoids CORS issues caused by the client_id being registered for localhost.
+ * In development (localhost) the original URL is used directly.
+ */
+function proxyAudioUrl(src: string): string {
+  if (!src || !src.includes('storage.jamendo.com')) return src
+  // Only proxy when running in production (non-localhost origin)
+  if (typeof window !== 'undefined' && window.location.hostname === 'localhost') return src
+  return `/api/jamendo-audio?src=${encodeURIComponent(src)}`
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapTrack(t: any, genre: string): Track {
   return {
     id: String(t.id),
     name: decodeHtml(t.name ?? ''),
     artist: decodeHtml(t.artist_name ?? ''),
-    src: t.audio,
+    src: proxyAudioUrl(t.audio),
     duration: t.duration ?? 0,
     coverUrl: t.image ?? undefined,
     source: 'jamendo',

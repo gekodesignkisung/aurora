@@ -10,10 +10,13 @@ const VISUAL_MODES: VisualMode[] = [
   'freq-terrain',
   'morph-blob',
   'tunnel-warp',
+  'liquid-mercury',
+  'zombie-dance',
 ]
 
-const getRandomMode = (): VisualMode => {
-  return VISUAL_MODES[Math.floor(Math.random() * VISUAL_MODES.length)]
+const getRandomMode = (exclude?: VisualMode): VisualMode => {
+  const pool = exclude ? VISUAL_MODES.filter((m) => m !== exclude) : VISUAL_MODES
+  return pool[Math.floor(Math.random() * pool.length)]
 }
 
 interface PlayerState {
@@ -61,7 +64,11 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   cachedGenreId: null,
   cachedThemeId: null,
 
-  setTrack: (track) => set({ track }),
+  setTrack: (track) => {
+    const { track: cur, visualMode } = get()
+    const changed = track && track.id !== cur?.id
+    set({ track, ...(changed ? { visualMode: getRandomMode(visualMode) } : {}) })
+  },
   setPlaylist: (tracks) => set({ playlist: tracks }),
   setIsPlaying: (v) => set({ isPlaying: v }),
   setCurrentTime: (v) => set({ currentTime: v }),
@@ -83,7 +90,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (!track) { set({ track: combined[0], isPlaying: true }); return }
     const idx = combined.findIndex((t) => t.id === track.id)
     const next = combined[(idx + 1) % combined.length]
-    set({ track: next, isPlaying: true })
+    set({ track: next, isPlaying: true, visualMode: getRandomMode(get().visualMode) })
     // Prefetch more Jamendo tracks when queue runs low
     if (jamendoQueue.length < 5 && track.genre) {
       fetchGenreQueue(track.genre as GenreId, 20).then((tracks) => {
@@ -98,7 +105,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (combined.length === 0 || !track) return
     const idx = combined.findIndex((t) => t.id === track.id)
     const prev = combined[(idx - 1 + combined.length) % combined.length]
-    set({ track: prev, isPlaying: true })
+    set({ track: prev, isPlaying: true, visualMode: getRandomMode(get().visualMode) })
   },
 
   loadGenreQueue: async (genre) => {

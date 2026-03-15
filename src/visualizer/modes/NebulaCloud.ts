@@ -18,7 +18,8 @@ interface FreqRing {
   line: THREE.LineLoop
   baseRadius: number
   dispAmp: number
-  freqOffset: number
+  freqMin: number   // frequency band start (0~1)
+  freqMax: number   // frequency band end   (0~1)
   hueOffset: number
   zOffset: number
   rotSpeed: number
@@ -33,12 +34,13 @@ export class NebulaCloud implements IVisualMode {
     this.ringGroup = new THREE.Group()
     scene.add(this.ringGroup)
 
+    // Outer rings = low freq (bass), inner rings = high freq (treble)
     const ringConfigs = [
-      { baseRadius: 16, dispAmp: 5,   freqOffset: 0.00, hueOffset: 0.00, zOffset:  0,  rotSpeed:  0.12 },
-      { baseRadius: 13, dispAmp: 4,   freqOffset: 0.20, hueOffset: 0.20, zOffset:  3,  rotSpeed: -0.08 },
-      { baseRadius: 19, dispAmp: 6,   freqOffset: 0.05, hueOffset: 0.45, zOffset: -3,  rotSpeed:  0.06 },
-      { baseRadius: 10, dispAmp: 3.5, freqOffset: 0.40, hueOffset: 0.65, zOffset:  5,  rotSpeed: -0.15 },
-      { baseRadius: 22, dispAmp: 7,   freqOffset: 0.10, hueOffset: 0.80, zOffset: -6,  rotSpeed:  0.04 },
+      { baseRadius: 22, dispAmp: 7,   freqMin: 0.00, freqMax: 0.12, hueOffset: 0.00, zOffset: -6,  rotSpeed:  0.04 }, // sub-bass
+      { baseRadius: 19, dispAmp: 6,   freqMin: 0.10, freqMax: 0.28, hueOffset: 0.20, zOffset: -3,  rotSpeed:  0.06 }, // bass
+      { baseRadius: 16, dispAmp: 5,   freqMin: 0.25, freqMax: 0.50, hueOffset: 0.45, zOffset:  0,  rotSpeed:  0.12 }, // low-mid
+      { baseRadius: 13, dispAmp: 4,   freqMin: 0.48, freqMax: 0.72, hueOffset: 0.65, zOffset:  3,  rotSpeed: -0.08 }, // high-mid
+      { baseRadius: 10, dispAmp: 3.5, freqMin: 0.70, freqMax: 1.00, hueOffset: 0.80, zOffset:  5,  rotSpeed: -0.15 }, // treble
     ]
 
     for (const cfg of ringConfigs) {
@@ -62,7 +64,8 @@ export class NebulaCloud implements IVisualMode {
         geo, positions: pts, mat, line,
         baseRadius: cfg.baseRadius,
         dispAmp: cfg.dispAmp,
-        freqOffset: cfg.freqOffset,
+        freqMin: cfg.freqMin,
+        freqMax: cfg.freqMax,
         hueOffset: cfg.hueOffset,
         zOffset: cfg.zOffset,
         rotSpeed: cfg.rotSpeed,
@@ -94,11 +97,12 @@ export class NebulaCloud implements IVisualMode {
 
       for (let j = 0; j < RING_RES; j++) {
         const angle = (j / RING_RES) * Math.PI * 2
-        const freqT = ((j / RING_RES) + ring.freqOffset) % 1
-        const binIdx = bins > 0 ? Math.floor(freqT * Math.min(bins - 1, 511)) : 0
-        const amp = bins > 0 ? frequencies[binIdx] / 255 : 0
-        const binIdx2 = bins > 0 ? Math.min(binIdx * 2, bins - 1) : 0
-        const amp2 = bins > 0 ? frequencies[binIdx2] / 255 : 0
+        // Sample only from this ring's assigned frequency band
+        const freqT   = ring.freqMin + (j / RING_RES) * (ring.freqMax - ring.freqMin)
+        const binIdx  = bins > 0 ? Math.floor(freqT * Math.min(bins - 1, 511)) : 0
+        const amp     = bins > 0 ? frequencies[binIdx] / 255 : 0
+        const binIdx2 = bins > 0 ? Math.min(binIdx + 4, bins - 1) : 0
+        const amp2    = bins > 0 ? frequencies[binIdx2] / 255 : 0
 
         const r = ring.baseRadius + amp * disp + amp2 * disp * 0.3
         ring.positions[j*3]   = Math.cos(angle) * r

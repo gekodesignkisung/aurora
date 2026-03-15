@@ -34,7 +34,8 @@ const S = {
 
 export default function MusicPanel({ open, onClose }: Props) {
   const [dragging, setDragging] = useState(false)
-  const [tab, setTab] = useState<'genre' | 'theme' | 'local'>('genre')
+  const [tab, setTab] = useState<'genre' | 'theme' | 'local' | 'url'>('genre')
+  const [urlInput, setUrlInput] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { isMobile } = useResponsive()
 
@@ -109,38 +110,51 @@ export default function MusicPanel({ open, onClose }: Props) {
   }
 
   const panelW: number | string = isMobile ? '100%' : 380
-  const canPlay = (tab === 'genre' && !!selectedGenre) || (tab === 'theme' && !!selectedTheme) || (tab === 'local' && playlist.length > 0)
+  const addUrl = useCallback(() => {
+    const url = urlInput.trim()
+    if (!url) return
+    const name = url.split('/').pop()?.split('?')[0] ?? 'URL Track'
+    const track: Track = { id: url, name, artist: 'URL', src: url, duration: 0, source: 'local' }
+    setTrack(track)
+    setIsPlaying(true)
+    setUrlInput('')
+    onClose()
+  }, [urlInput, setTrack, setIsPlaying, onClose])
+
+  const canPlay = (tab === 'genre' && !!selectedGenre) || (tab === 'theme' && !!selectedTheme) || (tab === 'local' && playlist.length > 0) || (tab === 'url' && !!urlInput.trim())
   const handlePlay = () => {
+    window.dispatchEvent(new Event('aurora:unlockAudio'))
     if (tab === 'genre' && selectedGenre) { startGenreStream(selectedGenre); onClose() }
     if (tab === 'theme' && selectedTheme) { startThemeStream(selectedTheme); onClose() }
     if (tab === 'local' && playlist.length > 0) {
       const target = currentTrack && playlist.find(t => t.id === currentTrack.id) ? currentTrack : playlist[0]
       setTrack(target); setIsPlaying(true); onClose()
     }
+    if (tab === 'url') addUrl()
   }
 
   return (
     <>
-      {/* Backdrop — covers right side (panel opens from left) */}
+      {/* Backdrop — covers left side (panel opens from right) */}
       {open && (
         <div
           onClick={onClose}
           style={{
             position: 'fixed', top: 0, bottom: 0,
-            left: isMobile ? 0 : 380, right: 0,
+            left: 0, right: isMobile ? 0 : 380,
             zIndex: 39, pointerEvents: 'auto',
           }}
         />
       )}
 
-      {/* Panel — slides from left */}
+      {/* Panel — fades in/out */}
       <div style={{
-        position: 'fixed', left: 0, top: 0, bottom: 0, width: panelW,
-        background: 'linear-gradient(to right, rgba(0,0,0,1) 0%, rgba(0,0,0,0.60) 70%, rgba(0,0,0,0) 100%)',
+        position: 'fixed', right: 0, top: 0, bottom: 0, width: panelW,
+        background: isMobile ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.6)',
         zIndex: 40, display: 'flex', flexDirection: 'column',
-        transform: open ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.3s ease',
-        pointerEvents: 'auto',
+        opacity: open ? 1 : 0,
+        pointerEvents: open ? 'auto' : 'none',
+        transition: 'opacity 0.3s ease',
         fontFamily: S.font,
         overflow: 'hidden',
       } as React.CSSProperties}>
@@ -152,7 +166,7 @@ export default function MusicPanel({ open, onClose }: Props) {
           <div style={{ height: 50, display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: -10 }}>
             {/* Navigation: Genre / Theme / Local */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            {(['genre', 'theme', 'local'] as const).map((id) => (
+            {(['genre', 'theme', 'local', 'url'] as const).map((id) => (
               <button
                 key={id}
                 onClick={() => setTab(id)}
@@ -164,7 +178,7 @@ export default function MusicPanel({ open, onClose }: Props) {
                   transition: 'all 0.2s',
                 }}
               >
-                {id === 'genre' ? 'Genre' : id === 'theme' ? 'Theme' : 'Local'}
+                {id === 'genre' ? 'Genre' : id === 'theme' ? 'Theme' : id === 'local' ? 'Local' : 'URL'}
               </button>
             ))}
             </div>
@@ -274,8 +288,32 @@ export default function MusicPanel({ open, onClose }: Props) {
             </div>
           )}
 
+          {/* URL input */}
+          {tab === 'url' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <input
+                type="url"
+                value={urlInput}
+                onChange={(e) => setUrlInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') addUrl() }}
+                placeholder="https://example.com/audio.mp3"
+                style={{
+                  width: '100%', boxSizing: 'border-box',
+                  padding: '14px 18px', borderRadius: 12,
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  background: 'rgba(255,255,255,0.06)',
+                  color: '#CCCCCC', fontSize: 14, fontFamily: S.font,
+                  outline: 'none',
+                }}
+              />
+              <p style={{ color: 'rgba(255,255,255,0.25)', fontSize: 12, fontFamily: S.font, margin: 0 }}>
+                MP3, M4A, AAC, OGG, WAV, MP4, WebM URLs supported
+              </p>
+            </div>
+          )}
+
           {/* Play button */}
-          {(tab === 'genre' || tab === 'theme' || tab === 'local') && (
+          {(tab === 'genre' || tab === 'theme' || tab === 'local' || tab === 'url') && (
             <button
               onClick={handlePlay}
               disabled={!canPlay || isLoadingJamendo}
@@ -297,7 +335,9 @@ export default function MusicPanel({ open, onClose }: Props) {
                 ? <span style={{ color: S.colorText, fontSize: 13, fontFamily: S.font }}>Loading…</span>
                 : <>
                     <img src="/icon-play-list.svg" alt="play" style={{ width: 30, height: 30 }} />
-                    <span style={{ color: S.colorText, fontSize: 14, fontFamily: S.font, letterSpacing: '0.08em' }}>Playlist</span>
+                    <span style={{ color: S.colorText, fontSize: 14, fontFamily: S.font, letterSpacing: '0.08em' }}>
+                      {tab === 'url' ? 'Play URL' : 'Playlist'}
+                    </span>
                   </>
               }
             </button>
@@ -305,7 +345,7 @@ export default function MusicPanel({ open, onClose }: Props) {
         </div>
 
         {/* ── 스크롤 하단 영역 ── */}
-        <div style={{ flex: 1, overflowY: 'auto', padding: S.pad, display: 'flex', flexDirection: 'column', gap: S.gap }}>
+        <div style={{ flex: 1, overflowY: 'auto', padding: `${S.pad}px ${S.pad + 25}px`, display: 'flex', flexDirection: 'column', gap: S.gap }}>
 
           {/* Track list */}
           {allTracks.length > 0 && (
@@ -315,10 +355,10 @@ export default function MusicPanel({ open, onClose }: Props) {
                 return (
                   <div
                     key={t.id}
-                    onClick={() => { setTrack(t); setIsPlaying(true); onClose() }}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', transition: 'background 0.15s', padding: '11px 30px', margin: '-11px -30px', background: isCurrent ? 'rgba(153,153,153,0.3)' : 'transparent' }}
-                    onMouseEnter={(e) => { if (!isCurrent) e.currentTarget.style.background = 'rgba(153,153,153,0.3)' }}
-                    onMouseLeave={(e) => { e.currentTarget.style.background = isCurrent ? 'rgba(153,153,153,0.3)' : 'transparent' }}
+                    onClick={() => { window.dispatchEvent(new Event('aurora:unlockAudio')); setTrack(t); setIsPlaying(true); onClose() }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', transition: 'background 0.15s', padding: '11px 26px', margin: '-11px -26px', borderRadius: 20, background: isCurrent ? 'rgba(153,153,153,0.2)' : 'transparent' }}
+                    onMouseEnter={(e) => { if (!isCurrent) e.currentTarget.style.background = 'rgba(153,153,153,0.2)' }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = isCurrent ? 'rgba(153,153,153,0.2)' : 'transparent' }}
                   >
                     <div style={{ minWidth: 0 }}>
                       <p style={{
@@ -343,7 +383,7 @@ export default function MusicPanel({ open, onClose }: Props) {
           )}
 
           {/* Empty state */}
-          {allTracks.length === 0 && tab !== 'local' && (
+          {allTracks.length === 0 && tab !== 'local' && tab !== 'url' && (
             <p style={{ color: 'rgba(255,255,255,0.18)', fontSize: 13, fontFamily: S.font, margin: 0 }}>
               {tab === 'genre' ? 'Select genre and play' : 'Select theme and play'}
             </p>

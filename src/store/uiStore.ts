@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { GenreId, ThemeId } from '@/api/jamendo'
 
 type ActivePanel = 'queue' | 'genres' | null
-type MusicPanelTab = 'genre' | 'theme' | 'local'
+type MusicPanelTab = 'genre' | 'theme' | 'local' | 'url'
 
 interface UIState {
   showUI: boolean
