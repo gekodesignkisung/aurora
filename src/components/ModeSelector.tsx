@@ -38,33 +38,39 @@ export default function ModeSelector() {
   }, [visualMode, isMobile])
 
   return (
-    <div ref={containerRef} style={{ display: 'flex', flexWrap: 'nowrap', gap: 10, overflowX: isMobile ? 'auto' : 'visible', alignItems: 'flex-start', justifyContent: isMobile ? 'flex-start' : 'center', paddingTop: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: isMobile ? 'calc(100% - 32px)' : 'auto', minWidth: 0 }}>
+    <div ref={containerRef} style={{ display: 'flex', flexWrap: 'nowrap', gap: 5, overflowX: isMobile ? 'auto' : 'visible', alignItems: 'flex-start', justifyContent: isMobile ? 'flex-start' : 'center', paddingTop: 8, WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none', width: isMobile ? 'calc(100% - 32px)' : 'auto', minWidth: 0 }}>
       {MODES.map((m) => (
         <button
           key={m.id}
           data-mode={m.id}
           onClick={() => setVisualMode(m.id)}
           style={{
-            padding: '10px 22px',
-            paddingTop: '12px',
+            padding: '5px 17px',
+            paddingTop: '7px',
             borderRadius: 50,
             fontSize: 12,
             fontWeight: 400,
-            border: visualMode === m.id ? '2px solid #ddd' : '2px solid transparent',
+            border: '2px solid transparent',
             cursor: 'pointer',
-            transition: 'all 0.2s',
-            background: 'transparent',
-            color: visualMode === m.id ? '#ddd' : '#ffffff',
+            transition: 'background 0.2s, transform 0.2s',
+            background: visualMode === m.id ? 'rgba(255,255,255,0.4)' : 'transparent',
+            color: '#ffffff',
             fontFamily: 'Inter, -apple-system, sans-serif',
             whiteSpace: 'nowrap',
             flexShrink: 0,
             boxSizing: 'border-box',
           }}
           onMouseEnter={(e) => {
-            if (!isMobile && visualMode !== m.id) e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
+            if (!isMobile) {
+              e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
+              e.currentTarget.style.transform = 'scale(1.1)'
+            }
           }}
           onMouseLeave={(e) => {
-            if (!isMobile) e.currentTarget.style.background = 'transparent'
+            if (!isMobile) {
+              e.currentTarget.style.background = visualMode === m.id ? 'rgba(255,255,255,0.4)' : 'transparent'
+              e.currentTarget.style.transform = 'scale(1)'
+            }
           }}
         >
           {m.label}

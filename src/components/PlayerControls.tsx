@@ -451,31 +451,33 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
   return (
     <>
       {/* ── Top left: Album thumbnail + vertical text ── */}
-      <div style={{
-          position: 'fixed', inset: 0,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'flex-start',
-          padding: pad,
-          pointerEvents: 'none',
-          fontFamily: 'Inter, -apple-system, sans-serif',
-          zIndex: 2,
-          overflow: 'visible',
-        }}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flexShrink: 0, pointerEvents: track ? 'auto' : 'none', opacity: track ? 1 : 0, transition: 'opacity 0.4s ease' }}>
-            {lastTrackRef.current?.coverUrl ? (
-              <img src={lastTrackRef.current.coverUrl} alt="" style={{ width: 48, height: 48, borderRadius: 0, objectFit: 'cover' }} />
-            ) : (
-              <div style={{ width: 48, height: 48, background: 'white', borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <svg width="20" height="20" fill="rgba(0,0,0,0.2)" viewBox="0 0 24 24">
-                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                </svg>
+      {(
+        <div style={{
+            position: 'fixed', inset: 0,
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'flex-start',
+            padding: pad,
+            pointerEvents: 'none',
+            fontFamily: 'Inter, -apple-system, sans-serif',
+            zIndex: 2,
+            overflow: 'visible',
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20, flexShrink: 0, pointerEvents: track ? 'auto' : 'none', opacity: track ? 1 : 0, transition: 'opacity 0.4s ease' }}>
+              {lastTrackRef.current?.coverUrl ? (
+                <img src={lastTrackRef.current.coverUrl} alt="" style={{ width: 48, height: 48, borderRadius: 0, objectFit: 'cover' }} />
+              ) : (
+                <div style={{ width: 48, height: 48, background: 'white', borderRadius: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" fill="rgba(0,0,0,0.2)" viewBox="0 0 24 24">
+                    <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                  </svg>
+                </div>
+              )}
+              <div style={{ overflow: 'hidden', maxHeight: 200, width: 20 }}>
+                <p style={{ writingMode: 'vertical-rl', WebkitWritingMode: 'vertical-rl', color: '#ffffff', fontWeight: 400, fontSize: 16, opacity: 0.8, margin: 0, whiteSpace: 'nowrap' } as React.CSSProperties}>{lastTrackRef.current?.album}</p>
               </div>
-            )}
-            <div style={{ overflow: 'hidden', maxHeight: isMobile ? 200 : 300, width: 20 }}>
-              <p style={{ writingMode: 'vertical-rl', WebkitWritingMode: 'vertical-rl', color: '#ffffff', fontWeight: 400, fontSize: 16, opacity: 0.8, margin: 0, whiteSpace: 'nowrap' } as React.CSSProperties}>{lastTrackRef.current?.album}</p>
             </div>
           </div>
-        </div>
+      )}
 
       {/* ── Bottom background ── */}
       <div style={{
@@ -506,7 +508,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           {/* ── Mobile: Ring centered ── */}
           <div style={{
             position: 'fixed',
-            top: `calc(50% - ${geo.SVG_SIZE / 2 - 30}px - 20px)`,
+            top: `calc(50% - ${geo.SVG_SIZE / 2 - 30}px + 30px)`,
             left: '50%',
             transform: 'translate(-50%, -50%)',
             pointerEvents: 'auto',
@@ -516,7 +518,7 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           {/* ── Mobile: Info + controls below ring ── */}
           <div style={{
             position: 'fixed',
-            top: `calc(50% + ${geo.SVG_SIZE / 2 - geo.btnSize / 2 - 55}px - 20px)`,
+            top: `calc(50% + ${geo.SVG_SIZE / 2 - geo.btnSize / 2 - 55}px + 30px)`,
             left: '50%',
             transform: 'translateX(-50%)',
             display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
@@ -530,47 +532,120 @@ export default function PlayerControls({ audioRef, analyzerRef }: Props) {
           </div>
         </>
       ) : (
-        /* ── Desktop: Ring fixed, Info+Controls shifted up ── */
-        <>
-          {/* Ring: fixed, never moves */}
+        /* ── Desktop: Horizontal layout (Figma) — above ModeSelector ── */
+        <div style={{
+          position: 'fixed',
+          bottom: '140px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          display: 'flex',
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 30,
+          pointerEvents: 'auto',
+          zIndex: 3,
+        }}>
+          {/* Left: Volume slider (300px column) */}
           <div style={{
-            position: 'fixed',
-            bottom: '430px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            pointerEvents: 'auto',
-            zIndex: 3,
+            width: 300, minWidth: 300, flexShrink: 0, height: geo.SVG_SIZE,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            paddingTop: 10,
           }}>
-            {ringEl}
-          </div>
-          {/* Genre label: 70px above info+controls container */}
-          {genreLabelEl && (
-            <div style={{
-              position: 'fixed',
-              bottom: '434px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              pointerEvents: 'none',
-              zIndex: 2,
-            }}>
-              {genreLabelEl}
+            <div style={{ position: 'relative', width: 160, height: 44, flexShrink: 0, transform: 'translateX(30px)' }}>
+              <div style={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)', width: '100%', height: 2, background: 'rgba(255,255,255,0.3)', borderRadius: 1, pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: '50%', left: 0, transform: 'translateY(-50%)', width: `${volume * 100}%`, height: 2, background: '#ffffff', borderRadius: 1, pointerEvents: 'none' }} />
+              <div style={{ position: 'absolute', top: '50%', left: `${volume * 100}%`, transform: `translate(-50%, -50%) scale(${volDragging ? 1.5 : 1})`, width: 20, height: 20, background: '#ffffff', borderRadius: '50%', pointerEvents: 'none', transition: volDragging ? 'none' : 'transform 0.15s' }} />
+              <input
+                type="range" min={0} max={100} value={Math.round(volume * 100)}
+                onChange={(e) => setVolume(Number(e.target.value) / 100)}
+                onMouseDown={() => setVolDragging(true)}
+                onMouseUp={() => setVolDragging(false)}
+                onTouchStart={() => setVolDragging(true)}
+                onTouchEnd={() => setVolDragging(false)}
+                style={{
+                  position: 'absolute', inset: 0,
+                  width: '100%', height: '100%',
+                  opacity: 0, cursor: 'pointer', margin: 0,
+                  WebkitAppearance: 'none', appearance: 'none',
+                  touchAction: 'none',
+                } as React.CSSProperties}
+              />
             </div>
-          )}
-          {/* Info + Controls */}
-          <div style={{
-            position: 'fixed',
-            bottom: '212px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 32,
-            pointerEvents: 'auto',
-            minWidth: 'max-content',
-            zIndex: 2,
-          }}>
-            {infoEl}
-            {controlsEl}
           </div>
-        </>
+
+          {/* Prev button */}
+          <button
+            onClick={handlePrev}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              opacity: (track || playingStreamLabel) ? 1 : 0.25,
+              transition: 'opacity 0.4s ease, transform 0.15s',
+              width: 80, height: 80, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)' }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+          >
+            <img src="/icon-prev.svg" alt="prev" style={{ width: 80, height: 80, display: 'block' }} />
+          </button>
+
+          {/* Ring + time below */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            {ringEl}
+            <p style={{
+              color: '#cccccc', fontSize: 16,
+              fontFamily: 'Inter, -apple-system, sans-serif',
+              letterSpacing: '3.2px', textAlign: 'center',
+              margin: '-28px 0 0 0',
+              opacity: track ? 1 : 0, transition: 'opacity 0.4s ease',
+              fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap',
+            }}>
+              {(() => { const rem = Math.max(0, duration - currentTime); return `${String(Math.floor(rem / 60)).padStart(2, '0')}:${String(Math.floor(rem % 60)).padStart(2, '0')}` })()}
+            </p>
+          </div>
+
+          {/* Next button */}
+          <button
+            onClick={handleNext}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+              opacity: (track || playingStreamLabel) ? 1 : 0.25,
+              transition: 'opacity 0.4s ease, transform 0.15s',
+              width: 80, height: 80, flexShrink: 0,
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+            onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+            onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)' }}
+            onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+          >
+            <img src="/icon-next.svg" alt="next" style={{ width: 80, height: 80, display: 'block' }} />
+          </button>
+
+          {/* Right: Track info or genre label (300px column) */}
+          <div style={{
+            width: 300, minWidth: 300, flexShrink: 0, height: geo.SVG_SIZE,
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 10, paddingTop: 10,
+          }}>
+            {(track?.name ?? lastTrackRef.current?.name) ? (
+              <div style={{ opacity: track ? 1 : 0, transition: 'opacity 0.4s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, maxWidth: '100%', transform: 'translateX(-30px)' }}>
+                <p style={{ color: '#ffffff', fontSize: 18, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 240, textAlign: 'center' }}>
+                  {track?.name ?? lastTrackRef.current?.name}
+                </p>
+                <p style={{ color: '#cccccc', fontSize: 14, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, fontWeight: 400, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 240, textAlign: 'center' }}>
+                  {track?.artist ?? lastTrackRef.current?.artist}
+                </p>
+              </div>
+            ) : displayLabel ? (
+              <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 16, fontFamily: 'Inter, -apple-system, sans-serif', margin: 0, fontWeight: 400, letterSpacing: '0.1em', textTransform: 'uppercase', textAlign: 'center' }}>
+                {displayLabel}
+              </p>
+            ) : null}
+          </div>
+        </div>
       )}
     </>
   )
