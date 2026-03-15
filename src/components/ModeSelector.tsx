@@ -53,25 +53,15 @@ export default function ModeSelector() {
             border: '2px solid transparent',
             cursor: 'pointer',
             transition: 'background 0.2s, transform 0.2s',
-            background: visualMode === m.id ? 'rgba(255,255,255,0.4)' : 'transparent',
+            background: visualMode === m.id ? 'rgba(255,255,255,0.3)' : 'transparent',
             color: '#ffffff',
             fontFamily: 'Inter, -apple-system, sans-serif',
             whiteSpace: 'nowrap',
             flexShrink: 0,
             boxSizing: 'border-box',
           }}
-          onMouseEnter={(e) => {
-            if (!isMobile) {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.4)'
-              e.currentTarget.style.transform = 'scale(1.1)'
-            }
-          }}
-          onMouseLeave={(e) => {
-            if (!isMobile) {
-              e.currentTarget.style.background = visualMode === m.id ? 'rgba(255,255,255,0.4)' : 'transparent'
-              e.currentTarget.style.transform = 'scale(1)'
-            }
-          }}
+          onMouseEnter={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1.1)' }}
+          onMouseLeave={(e) => { if (!isMobile) e.currentTarget.style.transform = 'scale(1)' }}
         >
           {m.label}
         </button>

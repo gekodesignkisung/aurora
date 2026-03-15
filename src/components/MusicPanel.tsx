@@ -150,7 +150,7 @@ export default function MusicPanel({ open, onClose }: Props) {
       {/* Panel — fades in/out */}
       <div style={{
         position: 'fixed', right: 0, top: 0, bottom: 0, width: panelW,
-        background: isMobile ? 'rgba(0,0,0,0.8)' : 'rgba(0,0,0,0.6)',
+        background: 'rgba(0,0,0,0.8)',
         zIndex: 40, display: 'flex', flexDirection: 'column',
         opacity: open ? 1 : 0,
         pointerEvents: open ? 'auto' : 'none',

@@ -36,10 +36,10 @@ export default function UIOverlay({ audioRef, analyzerRef }: Props) {
             cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
             color: 'white', padding: 0, transition: 'transform 0.15s, opacity 0.15s',
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
-          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.opacity = '1' }}
-          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)'; e.currentTarget.style.opacity = '1' }}
-          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.opacity = '0.6' }}
+          onMouseEnter={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.transform = 'scale(1)' }}
+          onMouseDown={(e) => { e.currentTarget.style.transform = 'scale(1.5)' }}
+          onMouseUp={(e) => { e.currentTarget.style.transform = 'scale(1.2)' }}
         >
           <img src="/icon-menu.svg" alt="menu" style={{ width: buttonSize, height: buttonSize }} />
         </button>

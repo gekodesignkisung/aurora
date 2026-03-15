@@ -9,12 +9,14 @@ const L = {
   neck:     0.6,
   spine:    2.8,
   hip:      1.4,
-  shoulder: 3.2,
-  upperArm: 4.2,
-  foreArm:  3.8,
+  shoulder: 4.2,
+  upperArm: 3.2,
+  foreArm:  2.8,
   upperLeg: 4.5,
   lowerLeg: 4.0,
   head:     1.2,
+  foot:     1.8,
+  hand:     0.55,
 }
 
 // ─── Rig ────────────────────────────────────────────────────────────────────
@@ -25,6 +27,8 @@ interface DancerRig {
   lElbow: THREE.Group;    rElbow: THREE.Group
   lHip: THREE.Group;      rHip: THREE.Group
   lKnee: THREE.Group;     rKnee: THREE.Group
+  lFoot: THREE.Group;     rFoot: THREE.Group
+  lHand: THREE.Group;     rHand: THREE.Group
   drawables: (THREE.Line | THREE.Mesh)[]
 }
 
@@ -48,6 +52,8 @@ function buildRig(color: THREE.Color): DancerRig {
   const root = mk(), hips = mk(), spine = mk(), chest = mk(), neck = mk()
   const lShoulder = mk(), rShoulder = mk(), lElbow = mk(), rElbow = mk()
   const lHip = mk(), rHip = mk(), lKnee = mk(), rKnee = mk()
+  const lFoot = mk(), rFoot = mk()
+  const lHand = mk(), rHand = mk()
 
   // hierarchy
   root.add(hips)
@@ -56,12 +62,18 @@ function buildRig(color: THREE.Color): DancerRig {
   chest.add(neck); chest.add(lShoulder); chest.add(rShoulder)
   lShoulder.add(lElbow); rShoulder.add(rElbow)
   lHip.add(lKnee); rHip.add(rKnee)
+  lKnee.add(lFoot); rKnee.add(rFoot)
+  lElbow.add(lHand); rElbow.add(rHand)
 
   // pivot positions
   lHip.position.set(-L.hip * .5, 0, 0)
   rHip.position.set( L.hip * .5, 0, 0)
   lKnee.position.set(0, -L.upperLeg, 0)
   rKnee.position.set(0, -L.upperLeg, 0)
+  lFoot.position.set(0, -L.lowerLeg, 0)
+  rFoot.position.set(0, -L.lowerLeg, 0)
+  lHand.position.set(0, -L.foreArm, 0)
+  rHand.position.set(0, -L.foreArm, 0)
   chest.position.set(0, L.spine, 0)
   lShoulder.position.set(-L.shoulder * .5, 0, 0)
   rShoulder.position.set( L.shoulder * .5, 0, 0)
@@ -75,11 +87,28 @@ function buildRig(color: THREE.Color): DancerRig {
   seg(spine, O.clone(),                          new THREE.Vector3(0,L.spine,0))
   seg(chest, new THREE.Vector3(-L.shoulder*.5,0,0), new THREE.Vector3(L.shoulder*.5,0,0))
 
-  // legs (straight — no foot bend)
+  // legs
   seg(lHip,  O.clone(), new THREE.Vector3(0,-L.upperLeg,0))
   seg(rHip,  O.clone(), new THREE.Vector3(0,-L.upperLeg,0))
   seg(lKnee, O.clone(), new THREE.Vector3(0,-L.lowerLeg,0))
   seg(rKnee, O.clone(), new THREE.Vector3(0,-L.lowerLeg,0))
+  // feet
+  seg(lFoot, O.clone(), new THREE.Vector3(-L.foot * 0.3, 0, L.foot))
+  seg(rFoot, O.clone(), new THREE.Vector3( L.foot * 0.3, 0, L.foot))
+
+  // hands — small circle + 3 finger stubs
+  const addHand = (parent: THREE.Group, side: number) => {
+    const r = L.hand
+    const pts: THREE.Vector3[] = []
+    for (let i = 0; i <= 12; i++) {
+      const a = (i / 12) * Math.PI * 2
+      pts.push(new THREE.Vector3(Math.cos(a) * r, Math.sin(a) * r, 0))
+    }
+    const hl = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), new THREE.LineBasicMaterial({ color }))
+    parent.add(hl); drawables.push(hl)
+  }
+  addHand(lHand, -1)
+  addHand(rHand,  1)
 
   // arms
   seg(lShoulder, O.clone(), new THREE.Vector3(0,-L.upperArm,0))
@@ -105,7 +134,7 @@ function buildRig(color: THREE.Color): DancerRig {
 
 
   return { root, hips, spine, chest, neck, lShoulder, rShoulder,
-           lElbow, rElbow, lHip, rHip, lKnee, rKnee, drawables }
+           lElbow, rElbow, lHip, rHip, lKnee, rKnee, lFoot, rFoot, lHand, rHand, drawables }
 }
 
 function setRigColor(rig: DancerRig, col: THREE.Color) {
@@ -283,9 +312,9 @@ const MOVES: MoveFn[] = [
       neckX: pump*.1, neckZ: Math.sin(t*2+ph)*.1,
       lShX:  pump*.5, lShZ:  .25, rShX: -pump*.5, rShZ: -.25,
       lElX: -1.0, rElX: -1.0,
-      lHiX:  .3, lHiZ:  .1, rHiX: -.3, rHiZ: -.1,
+      lHiX:  .4 + low*.3, lHiZ:  .1, rHiX: .4 + low*.3, rHiZ: -.1,
       lKnX: -low, rKnX: -low,
-      rootBounce: -low*1.2 + Math.abs(pump)*.3*e,
+      rootBounce: -low*2.5 + Math.abs(pump)*.3*e,
     }
   },
 
@@ -344,22 +373,21 @@ const MOVES: MoveFn[] = [
     }
   },
 
-  // 12. SQUAT — 앉았다 일어났다
+  // 12. WIDE STANCE — 두 다리 양쪽으로 벌리며 상체 낮추기
   (t, e, b, m, ph) => {
-    const squat = Math.sin(t * 1.2 + ph) * .5 + .5   // 0~1
-    const depth = squat * 3.5 * e
+    const low  = Math.sin(t * 0.8 + ph) * .5 + .5   // 0~1
+    const wide = 0.45 + low * 0.55                   // 다리 벌림 각도
     return {
-      hipsY: 0, hipsZ: Math.sin(t*2+ph)*.12,
-      spineX: squat*.25, spineZ: 0,
-      chestY: Math.sin(t*1.2+ph)*.15,
-      neckX: squat*.1, neckZ: 0,
-      lShX: .3,  lShZ:  .5 + squat*.3,
-      rShX: .3,  rShZ: -.5 - squat*.3,
-      lElX: -.6, rElX: -.6,
-      lHiX:  .4 + squat*.4, lHiZ:  .1,
-      rHiX:  .4 + squat*.4, rHiZ: -.1,
-      lKnX: -(squat * 1.8 + .1), rKnX: -(squat * 1.8 + .1),
-      rootBounce: -depth,
+      hipsY: 0, hipsZ: Math.sin(t*1.5+ph) * .05,
+      spineX: low * .08, spineZ: 0,
+      chestY: 0, neckX: low * .05, neckZ: 0,
+      lShX: .1,  lShZ:  .5 + low * .25,
+      rShX: .1,  rShZ: -(.5 + low * .25),
+      lElX: -.3, rElX: -.3,
+      lHiX: low * .25, lHiZ: -wide,
+      rHiX: low * .25, rHiZ:  wide,
+      lKnX: low * .55, rKnX: low * .55,
+      rootBounce: -(low * 3.8 * e),
     }
   },
 
@@ -400,11 +428,110 @@ const MOVES: MoveFn[] = [
       rootBounce: Math.abs(step) * .2 * e,
     }
   },
+
+  // 15. HANDS UP — 두 팔 쭉 위로, 몸 스웨이
+  (t, e, b, _m, ph) => {
+    const sway  = Math.sin(t * 1.2 + ph) * .25
+    const pump  = Math.sin(t * 4   + ph) * .15 * e
+    const raise = Math.min(1, e + .4)
+    return {
+      hipsY: sway * .4, hipsZ: sway * .3,
+      spineX: -.05, spineZ: sway * .2,
+      chestY: Math.sin(t * .9 + ph) * .15,
+      neckX: -.15, neckZ: sway * .3,
+      lShX: -Math.PI * (.75 + raise * .2) + pump, lShZ:  .1,
+      rShX: -Math.PI * (.75 + raise * .2) - pump, rShZ: -.1,
+      lElX: -.15 + pump * .5, rElX: -.15 - pump * .5,
+      lHiX:  Math.sin(t * 2 + ph) * .12, lHiZ:  .05,
+      rHiX: -Math.sin(t * 2 + ph) * .12, rHiZ: -.05,
+      lKnX: .08, rKnX: .08,
+      rootBounce: Math.abs(sway) * .2 + pump * .3,
+    }
+  },
+
+  // 16. HIGH KNEE RUN — 제자리 고무릎 달리기
+  (t, e, b, _m, ph) => {
+    const cy   = Math.sin(t * 6 + ph)
+    const liftL = Math.max(0, -cy)
+    const liftR = Math.max(0,  cy)
+    return {
+      hipsY: 0, hipsZ: cy * .06,
+      spineX: cy * .05, spineZ: 0,
+      chestY: 0, neckX: 0, neckZ: cy * .05,
+      lShX:  cy * .9 * e,  lShZ:  .08, rShX: -cy * .9 * e,  rShZ: -.08,
+      lElX: -.7 * e, rElX: -.7 * e,
+      lHiX:  liftL * 1.6 * e, lHiZ: 0, rHiX: liftR * 1.6 * e, rHiZ: 0,
+      lKnX: -liftL * 1.1, rKnX: -liftR * 1.1,
+      rootBounce: Math.abs(cy) * .3 * e,
+    }
+  },
+
+  // 17. ARMS WIDE — T자 포즈, 팔 가로로 쭉 뻗기
+  (t, e, b, _m, ph) => {
+    const breathe = Math.sin(t * 0.8 + ph) * 0.07
+    const sway    = Math.sin(t * 1.2 + ph) * 0.1
+    return {
+      hipsY: sway * 0.3,   hipsZ: sway * 0.12,
+      spineX: 0,            spineZ: sway * 0.08,
+      chestY: breathe * 0.4,
+      neckX: breathe * 0.4, neckZ: sway * 0.15,
+      lShX: 0,  lShZ: -Math.PI * 0.48 + breathe,
+      rShX: 0,  rShZ:  Math.PI * 0.48 - breathe,
+      lElX: -0.1, rElX: -0.1,
+      lHiX: Math.sin(t * 2 + ph) * 0.1, lHiZ:  0.05,
+      rHiX: Math.sin(t * 2 + ph) * 0.1, rHiZ: -0.05,
+      lKnX: 0.08, rKnX: 0.08,
+      rootBounce: breathe * 0.2,
+    }
+  },
+
+  // 18. UPPER BODY SWAY — 상체 좌우로 크게 흔들기
+  (t, e, b, _m, ph) => {
+    const sway = Math.sin(t * 1.0 + ph) * e
+    return {
+      hipsY: 0,   hipsZ: sway * 0.3,
+      spineX: 0,  spineZ: sway * 0.55,
+      chestY: Math.sin(t * 0.8 + ph) * 0.15,
+      neckX: 0,   neckZ: -sway * 0.4,
+      lShX: sway * 0.5,  lShZ:  0.1,
+      rShX: -sway * 0.5, rShZ: -0.1,
+      lElX: -0.5, rElX: -0.5,
+      lHiX: Math.sin(t * 2 + ph) * 0.1, lHiZ:  0.05,
+      rHiX: Math.sin(t * 2 + ph) * 0.1, rHiZ: -0.05,
+      lKnX: 0.1, rKnX: 0.1,
+      rootBounce: Math.abs(sway) * 0.3,
+    }
+  },
+
+  // 19. WALK — 비트 싱크 걷기 (기본 동작)
+  (t, e, b, _m, ph) => {
+    const cy    = Math.sin(t * 3 + ph)
+    const liftL = Math.max(0, -cy)
+    const liftR = Math.max(0,  cy)
+    const bob   = Math.abs(cy) * 0.18 * e
+    return {
+      hipsY: cy * 0.04,    hipsZ: cy * 0.14,
+      spineX: 0.06,         spineZ: cy * 0.07,
+      chestY: cy * 0.04,
+      neckX: 0,             neckZ: cy * 0.05,
+      lShX:  cy * 0.65 * e, lShZ:  0.05,
+      rShX: -cy * 0.65 * e, rShZ: -0.05,
+      lElX: -0.4 * e, rElX: -0.4 * e,
+      lHiX:  liftL * 1.1 * e, lHiZ:  0.04,
+      rHiX:  liftR * 1.1 * e, rHiZ: -0.04,
+      lKnX:  liftL * 0.9,  rKnX:  liftR * 0.9,
+      rootBounce: -bob,
+    }
+  },
 ]
 
-const MOVE_JUMP = MOVES.length       // 10
-const MOVE_FLIP = MOVES.length + 1  // 11
-const TOTAL_MOVES = MOVES.length + 2
+const MOVE_JUMP      = MOVES.length       // special
+const MOVE_FLIP      = MOVES.length + 1  // special
+const MOVE_SPRINT    = MOVES.length + 2  // special
+const MOVE_BIGJUMP   = MOVES.length + 3  // special — high jump arms up
+const MOVE_HANDSTAND = MOVES.length + 4  // special — 물구나무
+const MOVE_HEADSPIN  = MOVES.length + 5  // special — 헤드스핀
+const TOTAL_MOVES    = MOVES.length + 6
 
 // ─── Dancer state ─────────────────────────────────────────────────────────────
 interface Dancer {
@@ -427,6 +554,8 @@ interface Dancer {
   armT:      number   // arm-only fast clock
   kickSide:  number   // 0=left 1=right, alternates on beat
   kickPow:   number   // 0~1 decays after beat
+  sprintDir: number   // ±1 horizontal run direction
+  sprintX:   number   // current X offset during sprint
 }
 
 function lerpRot(g: THREE.Group, x: number, y: number, z: number, a: number) {
@@ -435,11 +564,40 @@ function lerpRot(g: THREE.Group, x: number, y: number, z: number, a: number) {
   g.rotation.z += (z - g.rotation.z) * a
 }
 
+function clampJoints(rig: DancerRig) {
+  // Knee: 음수(앞) 완전 차단, 양수(뒤) 많이 허용
+  rig.lKnee.rotation.x = Math.max(0, rig.lKnee.rotation.x)
+  rig.rKnee.rotation.x = Math.max(0, rig.rKnee.rotation.x)
+  // Elbow: only bends forward (rotation.x ≤ 0), prevent hyper-extension
+  rig.lElbow.rotation.x = Math.min(0.05, rig.lElbow.rotation.x)
+  rig.rElbow.rotation.x = Math.min(0.05, rig.rElbow.rotation.x)
+  // Wrist: no backward bend at all, limit forward flex and roll
+  rig.lHand.rotation.x = Math.max(0, Math.min(0.9, rig.lHand.rotation.x))
+  rig.rHand.rotation.x = Math.max(0, Math.min(0.9, rig.rHand.rotation.x))
+  rig.lHand.rotation.z = Math.max(-1.1, Math.min(1.1, rig.lHand.rotation.z))
+  rig.rHand.rotation.z = Math.max(-1.1, Math.min(1.1, rig.rHand.rotation.z))
+  // Ankle: prevent forward over-bend (rotation.x > 0.5) and backward curl
+  rig.lFoot.rotation.x = Math.max(-0.15, Math.min(0.5, rig.lFoot.rotation.x))
+  rig.rFoot.rotation.x = Math.max(-0.15, Math.min(0.5, rig.rFoot.rotation.x))
+}
+
 function nextMove(d: Dancer) {
   // avoid picking same move or another jump/flip immediately
   let next = (d.moveIdx + 1 + Math.floor(Math.random() * 4)) % TOTAL_MOVES
-  // Limit jump/flip frequency — only allow every ~3 moves
+  // Limit special move frequency
   if ((next === MOVE_JUMP || next === MOVE_FLIP) && Math.random() > 0.3) {
+    next = Math.floor(Math.random() * MOVES.length)
+  }
+  if (next === MOVE_SPRINT && Math.random() > 0.25) {
+    next = Math.floor(Math.random() * MOVES.length)
+  }
+  if (next === MOVE_BIGJUMP && Math.random() > 0.2) {
+    next = Math.floor(Math.random() * MOVES.length)
+  }
+  if (next === MOVE_HANDSTAND && Math.random() > 0.15) {
+    next = Math.floor(Math.random() * MOVES.length)
+  }
+  if (next === MOVE_HEADSPIN && Math.random() > 0.18) {
     next = Math.floor(Math.random() * MOVES.length)
   }
   d.moveIdx   = next
@@ -487,6 +645,7 @@ export class ZombieDance implements IVisualMode {
         beatCount: 0,
         jumpVel: 0, jumpY: 0, spinAngle: 0, armT: Math.random() * 10,
         kickSide: i % 2, kickPow: 0,
+        sprintDir: Math.random() > 0.5 ? 1 : -1, sprintX: 0,
       })
     }
   }
@@ -577,17 +736,24 @@ export class ZombieDance implements IVisualMode {
       }
       d.flash   = Math.max(0, d.flash   - dt * 5)
       d.kickPow = Math.max(0, d.kickPow - dt * 6)
-
       // Move switching
       d.moveTimer += dt
       if (d.beatCount > 0 && d.beatCount % 8 === 0) nextMove(d)
       else if (d.moveTimer > d.moveDur) nextMove(d)
 
-      const energy = 0.4 + bass * 0.7 + this.beatBoost * 0.5
-      d.t    += dt * d.speedMul * (0.8 + bass * 0.5 + this.beatBoost * 0.4)
-      d.armT += dt * d.speedMul * (2.5 + bass * 1.5 + this.beatBoost * 1.0)
+      const vol    = Math.max(0.05, audio.volume)
+      const vAmp   = 0.5 + vol * 0.5                               // 진폭: 0.5~1.0
+      const vSpd   = 0.75 + vol * 0.25                             // 속도: 0.75~1.0 (덜 둔하게)
+      const energy = (0.3 + bass * 0.7 + this.beatBoost * 0.5) * vAmp
+      d.t    += dt * d.speedMul * (0.8 + bass * 0.5 + this.beatBoost * 0.4) * vSpd
+      d.armT += dt * d.speedMul * (2.2 + bass * 1.5 + this.beatBoost * 1.0) * vSpd
       const spd = 12 * dt
       const { rig } = d
+
+      if (beat) {
+        rig.lHand.rotation.z += (Math.random() - 0.5) * 1.2
+        rig.rHand.rotation.z += (Math.random() - 0.5) * 1.2
+      }
 
       // ── SPECIAL: JUMP ──────────────────────────────────────────────────────
       if (d.moveIdx === MOVE_JUMP) {
@@ -615,6 +781,7 @@ export class ZombieDance implements IVisualMode {
         rig.root.position.x  = d.baseX
         rig.root.rotation.x  = 0
         rig.root.rotation.y  = Math.sin(elapsed * .2 + d.phase) * .2
+        rig.root.rotation.z  = 0
 
         // Land
         if (d.jumpY <= 0 && d.jumpVel < 0) {
@@ -648,6 +815,7 @@ export class ZombieDance implements IVisualMode {
         rig.root.position.x = d.baseX
         rig.root.rotation.x = d.spinAngle
         rig.root.rotation.y = 0
+        rig.root.rotation.z = 0
 
         // Done after one full flip
         if (d.spinAngle >= Math.PI * 2) {
@@ -656,14 +824,157 @@ export class ZombieDance implements IVisualMode {
           nextMove(d)
         }
 
+      // ── SPECIAL: SPRINT ─────────────────────────────────────────────────────
+      } else if (d.moveIdx === MOVE_SPRINT) {
+        const speed = 14 + energy * 6
+        d.sprintX += d.sprintDir * speed * dt
+
+        // Bounce off stage edges
+        const bound = 30 + Math.abs(d.rig.root.position.z + 30) * 0.4
+        if (Math.abs(d.sprintX) > bound) {
+          d.sprintDir *= -1
+          d.sprintX = Math.sign(d.sprintX) * bound
+        }
+
+        // Running animation — high knee, arms pumping
+        const cy  = Math.sin(d.t * 7)
+        const liftL = Math.max(0, -cy)
+        const liftR = Math.max(0,  cy)
+        lerpRot(rig.hips,      0, d.sprintDir > 0 ? -.15 : .15, cy * .05, spd)
+        lerpRot(rig.spine,     cy * .04, 0, 0, spd)
+        lerpRot(rig.chest,     0, 0, 0, spd)
+        lerpRot(rig.neck,      -.05, 0, 0, spd)
+        lerpRot(rig.lShoulder,  cy * .9 * energy,  0,  .08, spd * 2)
+        lerpRot(rig.rShoulder, -cy * .9 * energy,  0, -.08, spd * 2)
+        lerpRot(rig.lElbow,    -.7 * energy, 0, 0, spd * 2)
+        lerpRot(rig.rElbow,    -.7 * energy, 0, 0, spd * 2)
+        lerpRot(rig.lHip,      liftL * 1.6 * energy, 0, 0, spd * 2)
+        lerpRot(rig.rHip,      liftR * 1.6 * energy, 0, 0, spd * 2)
+        lerpRot(rig.lKnee,    -liftL * 1.1, 0, 0, spd * 2)
+        lerpRot(rig.rKnee,    -liftR * 1.1, 0, 0, spd * 2)
+        lerpRot(rig.lFoot,     liftL * 0.5, 0, 0, spd * 2)
+        lerpRot(rig.rFoot,     liftR * 0.5, 0, 0, spd * 2)
+        // Hands pump forward during sprint
+        const sprintWrist = Math.sin(d.t * 7 + 0.8) * 0.6
+        lerpRot(rig.lHand,  sprintWrist, 0,  0.3 * d.sprintDir, spd * 2)
+        lerpRot(rig.rHand, -sprintWrist, 0, -0.3 * d.sprintDir, spd * 2)
+
+        rig.root.position.x  = d.baseX + d.sprintX
+        rig.root.position.y  = d.baseY + Math.abs(cy) * .25 * energy
+        rig.root.rotation.x  = 0
+        rig.root.rotation.y  = d.sprintDir > 0 ? -.15 : .15
+        rig.root.rotation.z  = 0
+
+        // End sprint after ~6 seconds
+        if (d.moveTimer > 6) { d.sprintX = 0; nextMove(d) }
+
+      // ── SPECIAL: BIG JUMP — high leap with arms raised ──────────────────────
+      } else if (d.moveIdx === MOVE_BIGJUMP) {
+        if (d.jumpVel === 0 && d.jumpY === 0) d.jumpVel = 16 + energy * 5
+
+        d.jumpVel -= 22 * dt
+        d.jumpY    = Math.max(0, d.jumpY + d.jumpVel * dt)
+
+        const airborne = d.jumpY > 0.2
+        // Arms raise overhead on the way up, come down on landing
+        const armLift = airborne ? -Math.PI * 0.9 : 0.3
+        lerpRot(rig.hips,      0, 0, 0, spd)
+        lerpRot(rig.spine,     airborne ? -.08 : 0, 0, 0, spd)
+        lerpRot(rig.chest,     0, 0, 0, spd)
+        lerpRot(rig.neck,      airborne ? -.2 : 0, 0, 0, spd)
+        lerpRot(rig.lShoulder, armLift,  0,  .08, spd)
+        lerpRot(rig.rShoulder, armLift,  0, -.08, spd)
+        lerpRot(rig.lElbow,    airborne ? -.1 : -.5, 0, 0, spd)
+        lerpRot(rig.rElbow,    airborne ? -.1 : -.5, 0, 0, spd)
+        lerpRot(rig.lHand,     airborne ?  .3 :  0, 0, 0, spd)
+        lerpRot(rig.rHand,     airborne ?  .3 :  0, 0, 0, spd)
+        lerpRot(rig.lHip,     -0.3, 0,  .08, spd)
+        lerpRot(rig.rHip,     -0.3, 0, -.08, spd)
+        lerpRot(rig.lKnee,     airborne ? 1.4 : 0, 0, 0, spd)
+        lerpRot(rig.rKnee,     airborne ? 1.4 : 0, 0, 0, spd)
+
+        rig.root.position.y  = d.baseY + d.jumpY
+        rig.root.position.x  = d.baseX
+        rig.root.rotation.x  = 0
+        rig.root.rotation.y  = Math.sin(elapsed * .2 + d.phase) * .15
+        rig.root.rotation.z  = 0
+
+        if (d.jumpY <= 0 && d.jumpVel < 0) {
+          d.jumpVel = 0; d.jumpY = 0
+          nextMove(d)
+        }
+
+      // ── SPECIAL: HANDSTAND — 물구나무 서기 ─────────────────────────────────
+      } else if (d.moveIdx === MOVE_HANDSTAND) {
+        // Flip character upside-down around Z axis
+        rig.root.rotation.z += (Math.PI - rig.root.rotation.z) * Math.min(1, spd * 0.4)
+        const wobble = Math.sin(d.t * 2.0 + d.phase) * 0.06
+        lerpRot(rig.hips,      0, 0, wobble * 0.5, spd)
+        lerpRot(rig.spine,     0.12, 0, wobble, spd)
+        lerpRot(rig.chest,     0, 0, 0, spd)
+        lerpRot(rig.neck,      0.1, 0, 0, spd)
+        lerpRot(rig.lShoulder, 0, 0,  0.18, spd)
+        lerpRot(rig.rShoulder, 0, 0, -0.18, spd)
+        lerpRot(rig.lElbow,    -0.18, 0, 0, spd)
+        lerpRot(rig.rElbow,    -0.18, 0, 0, spd)
+        lerpRot(rig.lHip,      wobble * 0.5, 0,  0.04, spd)
+        lerpRot(rig.rHip,      wobble * 0.5, 0, -0.04, spd)
+        lerpRot(rig.lKnee,     0, 0, 0, spd)
+        lerpRot(rig.rKnee,     0, 0, 0, spd)
+        rig.root.position.y = d.baseY + wobble * 0.3
+        rig.root.position.x = d.baseX + wobble * 1.5
+        rig.root.rotation.x = 0
+        rig.root.rotation.y = 0
+        if (d.moveTimer > d.moveDur) {
+          rig.root.rotation.z = 0
+          nextMove(d)
+        }
+
+      // ── SPECIAL: HEADSPIN — 헤드스핀 ───────────────────────────────────────
+      } else if (d.moveIdx === MOVE_HEADSPIN) {
+        // Bend deeply forward then spin on Y
+        d.spinAngle += dt * (4 + energy * 3)
+        const lean = Math.min(1, d.moveTimer * 1.5) // ramp-in lean
+        lerpRot(rig.hips,      0.5 * lean, 0, 0, spd)
+        lerpRot(rig.spine,     0.6 * lean, 0, 0, spd)
+        lerpRot(rig.chest,     0.4 * lean, 0, 0, spd)
+        lerpRot(rig.neck,      0.5 * lean, 0, 0, spd)
+        // Arms spread wide for spin momentum
+        lerpRot(rig.lShoulder, 0, 0, -Math.PI * 0.4 * lean, spd)
+        lerpRot(rig.rShoulder, 0, 0,  Math.PI * 0.4 * lean, spd)
+        lerpRot(rig.lElbow,    -0.2, 0, 0, spd)
+        lerpRot(rig.rElbow,    -0.2, 0, 0, spd)
+        // Legs: one slightly raised, one planted
+        lerpRot(rig.lHip,  0.2 * lean, 0,  0.08, spd)
+        lerpRot(rig.rHip,  0.15 * lean, 0, -0.08, spd)
+        lerpRot(rig.lKnee, 0.3, 0, 0, spd)
+        lerpRot(rig.rKnee, 0.2, 0, 0, spd)
+        rig.root.position.y = d.baseY - lean * 2.5
+        rig.root.position.x = d.baseX
+        rig.root.rotation.x = 0
+        rig.root.rotation.y = d.spinAngle
+        rig.root.rotation.z = 0
+        if (d.moveTimer > d.moveDur) {
+          d.spinAngle = 0
+          rig.root.rotation.y = 0
+          nextMove(d)
+        }
+
       // ── NORMAL MOVES ───────────────────────────────────────────────────────
       } else {
         const s = MOVES[d.moveIdx](d.t, energy, bass, mid, d.phase)
 
-        lerpRot(rig.hips,      0,      s.hipsY,  s.hipsZ,  spd)
-        lerpRot(rig.spine,     s.spineX, 0,       s.spineZ, spd)
-        lerpRot(rig.chest,     0,      s.chestY,  0,        spd)
-        lerpRot(rig.neck,      s.neckX, 0,        s.neckZ,  spd)
+        // Beat-reactive rhythm overlays (volume + beat 연동)
+        const rPulse  = this.beatBoost * 0.8 + bass * 0.5 + vol * 0.4
+        const rRhythm = Math.sin(d.t * 4 + d.phase)
+
+        // Hip: 볼륨/비트 강할수록 좌우 흔들림 더 크게
+        lerpRot(rig.hips,  0, s.hipsY, s.hipsZ + rRhythm * rPulse * 0.2, spd)
+        // Spine: forward/back bob
+        lerpRot(rig.spine, s.spineX + rRhythm * rPulse * 0.2, 0, s.spineZ, spd)
+        // Chest: 볼륨/비트 강할수록 어깨 높낮이 더 크게
+        lerpRot(rig.chest, 0, s.chestY, rRhythm * rPulse * 0.3, spd)
+        lerpRot(rig.neck,  s.neckX, 0, s.neckZ, spd)
         // Arms use fast clock for more frequent movement
         const at      = d.armT
         const aSwing  = Math.sin(at * 2.2) * 0.5 * energy
@@ -674,6 +985,11 @@ export class ZombieDance implements IVisualMode {
         lerpRot(rig.rShoulder, s.rShX - aSwing,  0, s.rShZ - aLift,  armSpd)
         lerpRot(rig.lElbow,    s.lElX - aBend,   0, 0,               armSpd)
         lerpRot(rig.rElbow,    s.rElX - aBend,   0, 0,               armSpd)
+        // Hands — wrist roll + flex reacting to treble and arm swing
+        const wristRoll  = Math.sin(d.armT * 2.8 + d.phase) * 0.9 * (0.3 + treble * 0.7)
+        const wristFlex  = Math.sin(d.armT * 1.9 + 1.2)     * 0.5 * energy
+        lerpRot(rig.lHand,  wristFlex,  0,  wristRoll, armSpd)
+        lerpRot(rig.rHand,  wristFlex,  0, -wristRoll, armSpd)
         // Beat-reactive leg kick — alternates sides, snappy lerp
         const legSpd  = spd + d.kickPow * 20 * dt
         const lKick   = d.kickSide === 0 ? d.kickPow * 1.4 : 0
@@ -684,16 +1000,25 @@ export class ZombieDance implements IVisualMode {
         lerpRot(rig.rHip,  s.rHiX - rKick,  0, s.rHiZ, legSpd)
         lerpRot(rig.lKnee, s.lKnX + lKneeFold, 0, 0,   legSpd)
         lerpRot(rig.rKnee, s.rKnX + rKneeFold, 0, 0,   legSpd)
+        // feet: counter-rotate ankle so feet stay roughly level + slight kick
+        // 무릎 앞굽힘(음수)→발목 배굴(음수=평평), 뒤굽힘(양수)→발끝 아래(양수)
+        lerpRot(rig.lFoot, (s.lKnX + lKneeFold) * 0.4 + lKick * 0.4, 0, 0, legSpd)
+        lerpRot(rig.rFoot, (s.rKnX + rKneeFold) * 0.4 + rKick * 0.4, 0, 0, legSpd)
 
         // Head side-to-side sway
         lerpRot(rig.neck, s.neckX, 0,
           s.neckZ + Math.sin(d.armT * 1.4) * 0.3, spd)
 
-        rig.root.position.y  = d.baseY + s.rootBounce + this.beatBoost * .4
+        rig.root.position.y  = d.baseY + s.rootBounce + this.beatBoost * .5 * vAmp
+                             - Math.abs(rRhythm) * rPulse * 0.4
         rig.root.position.x  = d.baseX + Math.sin(elapsed * .4 + d.phase) * (.2 + mid * .3)
         rig.root.rotation.x  = 0
         rig.root.rotation.y  = Math.sin(elapsed * .2 + d.phase) * .2
+        rig.root.rotation.z += (0 - rig.root.rotation.z) * spd
       }
+
+      // Joint limits
+      clampJoints(rig)
 
       // Color
       const hue   = (this.hue + d.hueOff) % 1

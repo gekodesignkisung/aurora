@@ -58,7 +58,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   currentTime: 0,
   duration: 0,
   volume: 0.5,
-  visualMode: 'nebula-cloud',
+  visualMode: getRandomMode(),
   isLoadingJamendo: false,
   playingStreamLabel: null,
   cachedGenreId: null,
@@ -67,7 +67,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
   setTrack: (track) => {
     const { track: cur, visualMode } = get()
     const changed = track && track.id !== cur?.id
-    set({ track, ...(changed ? { visualMode: getRandomMode(visualMode) } : {}) })
+    set({ track })
   },
   setPlaylist: (tracks) => set({ playlist: tracks }),
   setIsPlaying: (v) => set({ isPlaying: v }),
@@ -90,7 +90,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (!track) { set({ track: combined[0], isPlaying: true }); return }
     const idx = combined.findIndex((t) => t.id === track.id)
     const next = combined[(idx + 1) % combined.length]
-    set({ track: next, isPlaying: true, visualMode: getRandomMode(get().visualMode) })
+    set({ track: next, isPlaying: true })
     // Prefetch more Jamendo tracks when queue runs low
     if (jamendoQueue.length < 5 && track.genre) {
       fetchGenreQueue(track.genre as GenreId, 20).then((tracks) => {
@@ -105,7 +105,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     if (combined.length === 0 || !track) return
     const idx = combined.findIndex((t) => t.id === track.id)
     const prev = combined[(idx - 1 + combined.length) % combined.length]
-    set({ track: prev, isPlaying: true, visualMode: getRandomMode(get().visualMode) })
+    set({ track: prev, isPlaying: true })
   },
 
   loadGenreQueue: async (genre) => {
@@ -142,7 +142,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     // 이미 캐시된 큐가 있으면 즉시 재생
     if (cachedGenreId === genre && jamendoQueue.length > 0) {
       const shuffled = [...jamendoQueue].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label })
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, playingStreamLabel: label })
       return
     }
     set({ isLoadingJamendo: true })
@@ -150,7 +150,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const tracks = await fetchGenreQueue(genre, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label, cachedGenreId: genre, cachedThemeId: null })
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, playingStreamLabel: label, cachedGenreId: genre, cachedThemeId: null })
     } finally {
       set({ isLoadingJamendo: false })
     }
@@ -162,7 +162,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
     // 이미 캐시된 큐가 있으면 즉시 재생
     if (cachedThemeId === themeId && jamendoQueue.length > 0) {
       const shuffled = [...jamendoQueue].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label })
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, playingStreamLabel: label })
       return
     }
     set({ isLoadingJamendo: true })
@@ -170,7 +170,7 @@ export const usePlayerStore = create<PlayerState>((set, get) => ({
       const tracks = await fetchThemeQueue(themeId, 30)
       if (tracks.length === 0) return
       const shuffled = [...tracks].sort(() => Math.random() - 0.5)
-      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, visualMode: getRandomMode(), playingStreamLabel: label, cachedThemeId: themeId, cachedGenreId: null })
+      set({ jamendoQueue: shuffled, track: shuffled[0], isPlaying: true, playingStreamLabel: label, cachedThemeId: themeId, cachedGenreId: null })
     } finally {
       set({ isLoadingJamendo: false })
     }
